@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Écran de connexion de l'application Wallan.
+/// Permet à l'utilisateur de saisir ses identifiants et valide le formulaire en local.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -9,13 +11,19 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Clé globale pour gérer la validation du formulaire
   final _formKey = GlobalKey<FormState>();
+  
+  // Contrôleurs pour récupérer les textes saisis
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  
+  // Gère l'affichage/masquage du mot de passe
   bool _obscurePassword = true;
 
   @override
   void dispose() {
+    // Libération des ressources des contrôleurs pour éviter les fuites de mémoire
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -34,11 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Form(
-              key: _formKey,
+              key: _formKey, // Associe la clé globale au formulaire
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Icône d'authentification décorative
                   Icon(
                     Icons.lock_person_rounded,
                     size: 64,
@@ -61,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 36),
 
-                  // Champ Email
+                  // --- Champ Adresse Email ---
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -70,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintText: 'exemple@wallan.gn',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
+                    // Validations locales du format d'email
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre email';
@@ -82,13 +92,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Champ Mot de passe
+                  // --- Champ Mot de passe ---
                   TextFormField(
                     controller: _passwordController,
-                    obscureText: _obscurePassword,
+                    obscureText: _obscurePassword, // Masque les caractères si true
                     decoration: InputDecoration(
                       labelText: 'Mot de passe',
                       prefixIcon: const Icon(Icons.lock_outlined),
+                      // Bouton à l'extrémité droite pour révéler/masquer le mot de passe
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -100,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                     ),
+                    // Validation du mot de passe
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre mot de passe';
@@ -112,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Mot de passe oublié (Simulé)
+                  // --- Bouton "Mot de passe oublié ?" (Simulation) ---
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -128,17 +140,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Bouton de connexion
+                  // --- Bouton de Connexion ---
                   ElevatedButton(
                     onPressed: () {
+                      // Déclenche les fonctions `validator` de chaque champ du formulaire
                       if (_formKey.currentState!.validate()) {
-                        // Simulation de connexion réussie
+                        // Affiche un message de succès simulé
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Connexion réussie (simulation)'),
                             backgroundColor: Colors.teal,
                           ),
                         );
+                        // Redirige vers la page d'accueil principale
                         context.go('/');
                       }
                     },
@@ -146,13 +160,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Lien d'inscription
+                  // --- Lien d'inscription si pas encore de compte ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("Vous n'avez pas de compte ?"),
                       TextButton(
-                        onPressed: () => context.push('/register'),
+                        onPressed: () => context.push('/register'), // Navigue vers Register
                         child: const Text("S'inscrire"),
                       ),
                     ],

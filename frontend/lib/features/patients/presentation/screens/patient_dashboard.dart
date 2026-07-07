@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Espace santé du Patient.
+/// Permet au patient de visualiser ses constantes vitales actuelles et de déclencher une alerte SOS en cas d'urgence.
 class PatientDashboard extends StatelessWidget {
   const PatientDashboard({super.key});
 
@@ -12,6 +14,7 @@ class PatientDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Mon Espace Santé'),
         actions: [
+          // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => context.go('/'),
@@ -24,7 +27,7 @@ class PatientDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // User header
+              // --- En-tête Profil du Patient ---
               Row(
                 children: [
                   CircleAvatar(
@@ -58,7 +61,8 @@ class PatientDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // SOS Button Section
+              // --- Bouton SOS d'Urgence Critique ---
+              // Déclenche l'envoi immédiat de SMS d'alerte aux proches
               ElevatedButton(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -90,14 +94,14 @@ class PatientDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Constants Section
+              // --- Section des Constantes Vitales ---
               Text(
                 'Dernières Mesures Vitales',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
-              // Heart Rate
+              // 1. Rythme Cardiaque (BPM)
               _buildBiometricCard(
                 context,
                 title: 'Rythme Cardiaque',
@@ -109,7 +113,7 @@ class PatientDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Temperature
+              // 2. Température Corporelle (°C)
               _buildBiometricCard(
                 context,
                 title: 'Température',
@@ -121,7 +125,7 @@ class PatientDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // SpO2
+              // 3. Saturation en Oxygène (SpO2)
               _buildBiometricCard(
                 context,
                 title: 'Saturation en Oxygène (SpO2)',
@@ -138,14 +142,15 @@ class PatientDashboard extends StatelessWidget {
     );
   }
 
+  /// Génère une carte de mesure biométrique claire et lisible.
   Widget _buildBiometricCard(
     BuildContext context, {
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required String status,
+    required String title, // Nom de la mesure
+    required String value, // Valeur actuelle mesurée
+    required String subtitle, // Seuil d'alerte configuré
+    required IconData icon, // Icône représentative
+    required Color color, // Couleur thématique de l'icône
+    required String status, // Normal, Critique, etc.
   }) {
     final theme = Theme.of(context);
     return Card(
@@ -153,6 +158,7 @@ class PatientDashboard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
+            // Icône avec fond thématique coloré
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -162,6 +168,8 @@ class PatientDashboard extends StatelessWidget {
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(width: 16),
+            
+            // Textes descriptifs (Titre et Seuil d'alerte)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,6 +188,8 @@ class PatientDashboard extends StatelessWidget {
                 ],
               ),
             ),
+            
+            // Valeur mesurée actuelle et statut de santé associé
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

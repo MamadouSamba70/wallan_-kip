@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Écran d'inscription de l'application Wallan.
+/// Permet à un utilisateur de créer un compte avec un rôle spécifique.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -9,17 +11,22 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  // Clé globale pour gérer la validation du formulaire
   final _formKey = GlobalKey<FormState>();
+  
+  // Contrôleurs pour récupérer les valeurs saisies par l'utilisateur
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   
-  String _selectedRole = 'patient'; // patient, proche, admin
+  // Rôle sélectionné par défaut
+  String _selectedRole = 'patient'; // Choix possibles : 'patient', 'proche', 'admin'
   bool _obscurePassword = true;
 
   @override
   void dispose() {
+    // Libération des contrôleurs de texte pour éviter les fuites de mémoire
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -45,6 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Icône décorative pour l'inscription
                   Icon(
                     Icons.app_registration_rounded,
                     size: 64,
@@ -67,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 36),
 
-                  // Champ Nom complet
+                  // --- Champ Nom Complet ---
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
@@ -83,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Champ Email
+                  // --- Champ Adresse Email ---
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -103,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Champ Téléphone
+                  // --- Champ Téléphone (Format guinéen de préférence) ---
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
@@ -121,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Champ Mot de passe
+                  // --- Champ Mot de passe ---
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -151,7 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Sélection du rôle
+                  // --- Sélecteur de Rôle (SegmentedButton) ---
                   Text(
                     'Vous êtes :',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -177,16 +185,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         icon: Icon(Icons.admin_panel_settings_outlined),
                       ),
                     ],
-                    selected: {_selectedRole},
+                    selected: {_selectedRole}, // Rôle actuellement sélectionné
                     onSelectionChanged: (newSelection) {
                       setState(() {
-                        _selectedRole = newSelection.first;
+                        _selectedRole = newSelection.first; // Met à jour le rôle sélectionné
                       });
                     },
                   ),
                   const SizedBox(height: 32),
 
-                  // Bouton de validation
+                  // --- Bouton d'Inscription ---
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
@@ -196,20 +204,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             backgroundColor: Colors.teal,
                           ),
                         );
-                        context.go('/');
+                        context.go('/'); // Retourne à l'accueil
                       }
                     },
                     child: const Text("S'inscrire"),
                   ),
                   const SizedBox(height: 24),
 
-                  // Retour à la connexion
+                  // --- Retour à la Connexion ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("Vous avez déjà un compte ?"),
                       TextButton(
-                        onPressed: () => context.pop(),
+                        onPressed: () => context.pop(), // Rebranche sur l'écran précédent (Login)
                         child: const Text('Connexion'),
                       ),
                     ],

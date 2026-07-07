@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Espace Proche / Famille.
+/// Permet à un proche de surveiller à distance les constantes de son parent patient,
+/// de voir sa position GPS et de consulter l'historique des alertes déclenchées.
 class RelativeDashboard extends StatelessWidget {
   const RelativeDashboard({super.key});
 
@@ -13,6 +16,7 @@ class RelativeDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Espace Proche Wallan'),
         actions: [
+          // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => context.go('/'),
@@ -25,7 +29,7 @@ class RelativeDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Proche header
+              // --- En-tête Proche ---
               Text(
                 'Bonjour, Diallo Proche',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -39,7 +43,7 @@ class RelativeDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Patient Status Summary Card
+              // --- Carte de Résumé de Santé du Patient ---
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -47,13 +51,13 @@ class RelativeDashboard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.heart_broken_rounded, color: Colors.green, size: 28),
+                          const Icon(Icons.heart_broken_rounded, color: Colors.green, size: 28),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Santé Globale stable',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -64,6 +68,7 @@ class RelativeDashboard extends StatelessWidget {
                         ],
                       ),
                       const Divider(height: 24),
+                      // Affichage rapide des constantes actuelles du patient
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
@@ -78,7 +83,7 @@ class RelativeDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // GPS Tracking Section (Simulated)
+              // --- Section Localisation GPS (Simulation de Carte) ---
               Text(
                 'Dernière Localisation GPS',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -94,8 +99,9 @@ class RelativeDashboard extends StatelessWidget {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Simulated grid map lines
+                      // Icône de carte d'arrière-plan en filigrane
                       Icon(Icons.map_rounded, size: 80, color: Colors.blue.withValues(alpha: 0.2)),
+                      // Marqueur GPS rouge sur le centre de Conakry
                       const Positioned(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -115,12 +121,14 @@ class RelativeDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Alert logs list section
+              // --- Historique des Alertes Reçues ---
               Text(
                 'Historique des alertes',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
+              
+              // 1. Alerte Critique de Température
               _buildAlertItem(
                 context,
                 title: 'Alerte Température Élevée',
@@ -130,6 +138,8 @@ class RelativeDashboard extends StatelessWidget {
                 isCritical: true,
               ),
               const SizedBox(height: 12),
+              
+              // 2. Avertissement de Fréquence Cardiaque
               _buildAlertItem(
                 context,
                 title: 'Alerte Fréquence Cardiaque Basse',
@@ -145,6 +155,7 @@ class RelativeDashboard extends StatelessWidget {
     );
   }
 
+  /// Helper pour générer l'affichage compact des constantes en ligne.
   Widget _buildMiniConst(BuildContext context, String val, String label) {
     final theme = Theme.of(context);
     return Column(
@@ -164,13 +175,14 @@ class RelativeDashboard extends StatelessWidget {
     );
   }
 
+  /// Helper pour construire une ligne d'historique d'alertes.
   Widget _buildAlertItem(
     BuildContext context, {
-    required String title,
-    required String value,
-    required String date,
-    required String severity,
-    required bool isCritical,
+    required String title, // Titre de l'alerte
+    required String value, // Valeur mesurée problématique
+    required String date, // Date et heure de survenue
+    required String severity, // Niveau de sévérité (Critique, Avertissement)
+    required bool isCritical, // Détermine le code couleur (rouge ou orange)
   }) {
     return Card(
       child: ListTile(
@@ -192,10 +204,13 @@ class RelativeDashboard extends StatelessWidget {
             Text(date, style: const TextStyle(fontSize: 11, color: Colors.grey)),
           ],
         ),
+        // Badge de niveau de sévérité à droite
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isCritical ? Colors.red.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+            color: isCritical
+                ? Colors.red.withValues(alpha: 0.1)
+                : Colors.orange.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(

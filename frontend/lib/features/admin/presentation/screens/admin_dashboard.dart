@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Tableau de bord d'administration (Console Admin).
+/// Permet à un administrateur de surveiller le parc de bracelets connectés (ESP32)
+/// et d'associer un bracelet à un patient spécifique.
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
@@ -12,6 +15,7 @@ class AdminDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Console Admin Wallan'),
         actions: [
+          // Bouton de déconnexion menant à l'accueil
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => context.go('/'),
@@ -24,7 +28,7 @@ class AdminDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome header
+              // En-tête de bienvenue personnalisé
               Text(
                 'Bonjour, Administrateur',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -38,9 +42,10 @@ class AdminDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // KPI Row
+              // --- Section des Indicateurs Clés (KPI) ---
               Row(
                 children: [
+                  // KPI 1 : Nombre de bracelets actifs
                   Expanded(
                     child: _buildKpiCard(
                       context,
@@ -51,6 +56,7 @@ class AdminDashboard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // KPI 2 : Nombre d'alertes critiques actives
                   Expanded(
                     child: _buildKpiCard(
                       context,
@@ -64,7 +70,7 @@ class AdminDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Actions Quick Links
+              // --- Section des Actions Rapides ---
               Text(
                 'Actions Rapides',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -72,6 +78,7 @@ class AdminDashboard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
+                  // Action 1 : Enregistrer un nouveau bracelet (MAC address, etc.)
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
@@ -87,6 +94,7 @@ class AdminDashboard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // Action 2 : Lier un bracelet existant à un compte patient
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
@@ -106,7 +114,7 @@ class AdminDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Device List Section
+              // --- Section Liste des Bracelets ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -122,7 +130,7 @@ class AdminDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Device items list
+              // Génération de la liste des bracelets simulés
               _buildDeviceItem(
                 context,
                 mac: 'ESP32-E8:9F:6D:8B:12:4A',
@@ -156,6 +164,7 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
+  /// Génère une carte KPI (Indicateur Clé de Performance).
   Widget _buildKpiCard(
     BuildContext context, {
     required String title,
@@ -195,13 +204,14 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
+  /// Génère un élément individuel de la liste des bracelets.
   Widget _buildDeviceItem(
     BuildContext context, {
-    required String mac,
-    required String patient,
-    required String status,
-    required String battery,
-    required bool isConnected,
+    required String mac, // Adresse physique MAC du bracelet
+    required String patient, // Nom du patient assigné
+    required String status, // Statut du bracelet (Actif, Inactif, etc.)
+    required String battery, // Niveau de batterie du bracelet
+    required bool isConnected, // Statut de connexion Bluetooth
   }) {
     final theme = Theme.of(context);
 
@@ -210,12 +220,15 @@ class AdminDashboard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
+            // Icône de montre connectée (colorée si connectée, grise sinon)
             Icon(
               Icons.watch_rounded,
               color: isConnected ? theme.colorScheme.primary : Colors.grey,
               size: 36,
             ),
             const SizedBox(width: 16),
+            
+            // Détails du bracelet (Adresse MAC et Patient lié)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,9 +245,12 @@ class AdminDashboard extends StatelessWidget {
                 ],
               ),
             ),
+            
+            // Colonne de droite : Statut textuel et Niveau de batterie
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Badge de statut
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -253,6 +269,7 @@ class AdminDashboard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Icône de batterie dynamique avec pourcentage
                 Row(
                   children: [
                     Icon(

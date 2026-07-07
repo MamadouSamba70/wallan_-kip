@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Écran d'accueil principal (Landing Screen).
+/// Permet de sélectionner le portail utilisateur correspondant (Patient, Proche, Admin).
+/// Propose également des raccourcis vers la Connexion et l'Inscription.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Récupération des informations sur le thème actuel
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -18,9 +22,9 @@ class HomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo & Title
+                // --- Logo & Titre de l'Application ---
                 Icon(
-                  Icons.health_and_safety_rounded,
+                  Icons.health_and_safety_rounded, // Icône de santé de signature
                   size: 80,
                   color: theme.colorScheme.primary,
                 ),
@@ -45,7 +49,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
 
-                // Subtitle
+                // --- Section Portails ---
                 Text(
                   'Portails Utilisateurs (Simulés)',
                   style: theme.textTheme.titleLarge?.copyWith(
@@ -55,45 +59,50 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Portals selection
+                // Portail 1 : Patient
                 _buildPortalCard(
                   context,
                   title: 'Patient',
                   subtitle: 'Suivi des constantes & alertes',
                   icon: Icons.person_rounded,
                   color: theme.colorScheme.primary,
-                  onTap: () => context.push('/patient/dashboard'),
+                  onTap: () => context.push('/patient/dashboard'), // Redirige vers le dashboard patient
                 ),
                 const SizedBox(height: 16),
+                
+                // Portail 2 : Proche / Famille
                 _buildPortalCard(
                   context,
                   title: 'Proche / Famille',
                   subtitle: 'Surveillance à distance & urgences',
                   icon: Icons.family_restroom_rounded,
                   color: Colors.indigo,
-                  onTap: () => context.push('/relative/dashboard'),
+                  onTap: () => context.push('/relative/dashboard'), // Redirige vers le dashboard proche
                 ),
                 const SizedBox(height: 16),
+                
+                // Portail 3 : Administrateur
                 _buildPortalCard(
                   context,
                   title: 'Administrateur',
                   subtitle: 'Gestion des bracelets et des alertes',
                   icon: Icons.admin_panel_settings_rounded,
                   color: Colors.blueGrey,
-                  onTap: () => context.push('/admin/dashboard'),
+                  onTap: () => context.push('/admin/dashboard'), // Redirige vers le dashboard admin
                 ),
                 const SizedBox(height: 32),
 
-                // Divider
+                // --- Ligne de Séparation ---
                 const Divider(),
                 const SizedBox(height: 16),
 
-                // Login/Register Shortcuts
+                // --- Boutons Raccourcis Connexion & Inscription ---
                 Row(
                   children: [
+                    // Bouton de connexion
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => context.push('/login'),
+                        onPressed: () => context.push('/login'), // Navigue vers l'écran de Login
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -104,9 +113,10 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
+                    // Bouton d'inscription
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => context.push('/register'),
+                        onPressed: () => context.push('/register'), // Navigue vers l'écran de Register
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -126,6 +136,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Widget helper pour générer de belles cartes d'accès aux portails.
   Widget _buildPortalCard(
     BuildContext context, {
     required String title,
@@ -140,11 +151,12 @@ class HomeScreen extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap, // Action déclenchée au clic
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
+              // Conteneur de l'icône avec fond légèrement transparent
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -158,6 +170,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
+              // Textes d'information du portail
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,6 +189,7 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              // Flèche indiquant la possibilité de cliquer
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
