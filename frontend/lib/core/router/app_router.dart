@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/admin/presentation/screens/admin_dashboard.dart';
 import '../../features/patients/presentation/screens/patient_dashboard.dart';
 import '../../features/relatives/presentation/screens/relative_dashboard.dart';
@@ -10,9 +11,15 @@ import '../../features/relatives/presentation/screens/relative_dashboard.dart';
 /// Utilise la bibliothèque go_router pour gérer l'historique et les chemins URL.
 class AppRouter {
   static final GoRouter router = GoRouter(
-    // L'application s'ouvre par défaut sur le chemin racine "/" (écran d'accueil).
-    initialLocation: '/',
+    // L'application s'ouvre par défaut sur l'écran de démarrage "/splash".
+    initialLocation: '/splash',
     routes: [
+      // Route pour l'écran de démarrage (Splash Screen)
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+
       // Route pour la page d'accueil (Portail de sélection des rôles)
       GoRoute(
         path: '/',
