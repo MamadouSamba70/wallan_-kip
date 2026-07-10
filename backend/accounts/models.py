@@ -57,5 +57,14 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return self.is_superuser
 
+#Table pour stocker les informations supplémentaires des utilisateurs
+class Profile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    phone = models.CharField(max_length=20, blank=True)
+    photo = models.CharField(max_length=255, blank=True)
+    language = models.CharField(max_length=5, default='fr')
 
+    def __str__(self):
+        return f"Profil de {self.user.email}"
         
