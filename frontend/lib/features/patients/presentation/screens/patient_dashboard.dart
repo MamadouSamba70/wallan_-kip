@@ -14,6 +14,12 @@ class PatientDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Mon Espace Santé'),
         actions: [
+          // Accès à l'écran Alertes
+          IconButton(
+            icon: const Icon(Icons.notifications_rounded),
+            tooltip: 'Voir les alertes',
+            onPressed: () => context.push('/alerts'),
+          ),
           // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
