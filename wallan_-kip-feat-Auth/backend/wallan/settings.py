@@ -11,30 +11,20 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-
-#Decouple lit les variables de l'env et la fonction config('nomVar') cherche la valeur de nomVar dans l'env.
-#ça evite de les mettre en dur.
-# pyrefly: ignore [missing-import]
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
 # SECURITY WARNING: Elle ne doit jamais être visible dans le code versionné sur Github
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY', default='wallan-secret-dev-2026')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,11 +32,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework', #Django Rest Framework(Construction de l'API)
-    'rest_framework_simplejwt', #JSON Web Token(Authentification)
-    'accounts', #Application pour la gestion des comptes
-    'patients', #Application pour la gestion des patients (Fatima)
-    'alerts', #Application pour le système d'alertes (Fatima)
+    'rest_framework',           # Django Rest Framework
+    'rest_framework_simplejwt', # JSON Web Token
+    'accounts',                 # Gestion des comptes (Hadjiratou)
+    'patients',                 # Gestion des patients (Fatima)
+    'alerts',                   # Système d'alertes (Fatima)
+    'devices',                  # Gestion des bracelets (Hady)
+    'biometric_data',           # Données biométriques (Hady)
 ]
 
 MIDDLEWARE = [
@@ -78,10 +70,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wallan.wsgi.application'
 
-
 # Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -89,10 +78,7 @@ DATABASES = {
     }
 }
 
-
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -108,39 +94,24 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'fr-fr'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
+# Static files
 STATIC_URL = 'static/'
 
 # Configuration Django REST Framework
 REST_FRAMEWORK = {
-    #for each request API, DRF check JWT Token in Header. 
-    #if token is valid, the request is authorized. 
-    #if token is invalid, the request is rejected.
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    #By default, all paths are protected. 
-    #if user is not authenticated, the request is rejected.
-    #Use IsAuthenticatedOrReadOnly for public paths.
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
 
-#Tell django to use our custom User model
+# Tell django to use our custom User model
 AUTH_USER_MODEL = 'accounts.User'
