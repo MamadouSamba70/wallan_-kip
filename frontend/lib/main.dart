@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
       // Configuration des thèmes graphiques
       theme: AppTheme.lightTheme, // Thème clair officiel
       darkTheme: AppTheme.darkTheme, // Thème sombre officiel
-      themeMode: ThemeMode.system, // Aligne automatiquement le thème sur les réglages du smartphone.
+      themeMode: ThemeMode.light, // Force le thème clair pour avoir le même rendu sur tous les écrans.
       
       // Configuration de la navigation
       routerConfig: AppRouter.router, // Fichier contenant la liste des écrans et leurs chemins.
