@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework', #Django Rest Framework(Construction de l'API)
     'rest_framework_simplejwt', #JSON Web Token(Authentification)
     'accounts', #Application pour la gestion des comptes
+    'rest_framework_simplejwt.token_blacklist', #Token Blacklist(Deconnexion)
 ]
 
 MIDDLEWARE = [
