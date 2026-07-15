@@ -6,7 +6,8 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/admin/presentation/screens/admin_dashboard.dart';
 import '../../features/patients/presentation/screens/patient_dashboard.dart';
 import '../../features/relatives/presentation/screens/relative_dashboard.dart';
-import '../../features/alerts/presentation/screens/alerts_overview_screen.dart';
+import '../../features/alerts/presentation/screens/alert_screen.dart';    // Semaine 2 : remplace alerts_overview_screen.dart
+import '../../features/alerts/presentation/screens/sos_screen.dart';      // Semaine 2 : nouvel écran Urgence SOS
 
 /// Configuration centralisée de la navigation de l'application Wallan.
 /// Utilise la bibliothèque go_router pour gérer l'historique et les chemins URL.
@@ -57,10 +58,17 @@ class AppRouter {
         builder: (context, state) => const RelativeDashboard(),
       ),
 
-      // Route pour l'écran de vue d'ensemble des Alertes (maquette Semaine 1)
+      // Route pour l'écran Alertes (Semaine 2 : version fonctionnelle avec
+      // ListView.builder et données simulées, remplace la maquette de S1)
       GoRoute(
         path: '/alerts',                                              // URL affichée dans l'app pour cet écran
-        builder: (context, state) => const AlertsOverviewScreen(),      // Widget construit quand on visite "/alerts"
+        builder: (context, state) => const AlertScreen(),               // Widget construit quand on visite "/alerts"
+      ),
+
+      // Route pour l'écran Urgence SOS (Semaine 2, nouveau)
+      GoRoute(
+        path: '/sos',                                                  // URL affichée dans l'app pour cet écran
+        builder: (context, state) => const SosScreen(),                  // Widget construit quand on visite "/sos"
       ),
     ],
   );
