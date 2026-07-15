@@ -15,22 +15,11 @@ class Device(models.Model):
         ('inactive', 'Inactif'),        # Bracelet désactivé ou hors service
     ]
 
-    # Identifiant unique généré automatiquement
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    # Adresse MAC Bluetooth de l'ESP32 — unique par bracelet physique
-    hardware_id = models.CharField(max_length=50, unique=True)
-
-    # Modèle du bracelet (ex: Wallan-v1)
-    model = models.CharField(max_length=50)
-
-    # Version du firmware embarqué sur l'ESP32
-    firmware_version = models.CharField(max_length=20)
-
-    # Statut actuel du bracelet
+    hardware_id = models.CharField(max_length=50, unique=True)  # Adresse MAC Bluetooth de l'ESP32
+    model = models.CharField(max_length=50)                      # Modèle du bracelet (ex: Wallan-v1)
+    firmware_version = models.CharField(max_length=20)           # Version du firmware embarqué
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unassigned')
-
-    # Date d'enregistrement du bracelet dans le système
     registered_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -46,10 +35,12 @@ class DeviceAssignment(models.Model):
     """
     Historique complet des associations bracelet ↔ patient.
     Un bracelet ne peut avoir qu'une seule association active (is_current=True) à la fois.
-    Les anciennes associations sont conservées pour l'audit.
+    Les anciennes associations sont conservées pour l'historique.
+
+    CORRECTION SEMAINE 2 : FK pointe vers patients.Patient (et non plus vers User)
+    conformément au schéma de la base de données du cahier technique.
     """
 
-    # Identifiant unique généré automatiquement
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Bracelet concerné par cette association
@@ -60,21 +51,16 @@ class DeviceAssignment(models.Model):
     )
 
     # Patient auquel le bracelet est assigné
-    # On utilise settings.AUTH_USER_MODEL pour pointer vers notre modèle User custom (accounts.User)
+    # On utilise une string 'patients.Patient' pour éviter les imports circulaires
     patient = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'patients.Patient',
         on_delete=models.CASCADE,
         related_name='device_assignments'
     )
 
-    # Date à laquelle le bracelet a été assigné au patient
-    assigned_at = models.DateTimeField(auto_now_add=True)
-
-    # Date de fin d'association — null si l'association est encore active
-    unassigned_at = models.DateTimeField(null=True, blank=True)
-
-    # True si c'est l'association en cours, False si c'est un historique
-    is_current = models.BooleanField(default=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)      # Date de début de l'association
+    unassigned_at = models.DateTimeField(null=True, blank=True) # Date de fin (null si encore actif)
+    is_current = models.BooleanField(default=True)              # True = association en cours
 
     class Meta:
         db_table = 'device_assignments'
@@ -92,24 +78,18 @@ class DeviceStatus(models.Model):
     Relation OneToOne : un bracelet a exactement un état à la fois.
     """
 
-    # Identifiant unique généré automatiquement
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Bracelet concerné — OneToOne car un bracelet a un seul état en temps réel
+    # OneToOne car un bracelet a un seul état en temps réel
     device = models.OneToOneField(
         Device,
         on_delete=models.CASCADE,
         related_name='device_status'
     )
 
-    # Niveau de batterie en pourcentage (0 à 100)
-    battery_level = models.IntegerField()
-
-    # True si le bracelet est actuellement connecté en Bluetooth
-    is_connected = models.BooleanField(default=False)
-
-    # Date et heure de la dernière synchronisation avec le serveur
-    last_sync = models.DateTimeField(null=True, blank=True)
+    battery_level = models.IntegerField()               # Niveau batterie en % (0 à 100)
+    is_connected = models.BooleanField(default=False)   # True si connecté en Bluetooth
+    last_sync = models.DateTimeField(null=True, blank=True)  # Dernière synchronisation serveur
 
     class Meta:
         db_table = 'device_status'
