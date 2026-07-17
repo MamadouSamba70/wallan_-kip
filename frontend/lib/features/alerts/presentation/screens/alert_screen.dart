@@ -12,8 +12,6 @@ class AlertScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {                                  // Construction de l'interface
-    final theme = Theme.of(context);                                     // Thème global Wallan (couleurs, polices)
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alertes'),                                    // Titre affiché en haut de l'écran
