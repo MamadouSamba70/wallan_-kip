@@ -23,4 +23,9 @@ urlpatterns = [
 
     #All our paths auth will start with /api/auth/
     path('api/auth/', include('accounts.urls')),
+
+    #Routes des patients, alertes et bracelets
+    path('api/', include('patients.urls')),
+    path('api/', include('alerts.urls')),
+    path('api/devices/', include('devices.urls')),
 ]

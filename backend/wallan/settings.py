@@ -44,8 +44,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework', #Django Rest Framework(Construction de l'API)
     'rest_framework_simplejwt', #JSON Web Token(Authentification)
-    'accounts', #Application pour la gestion des comptes
     'rest_framework_simplejwt.token_blacklist', #Token Blacklist(Deconnexion)
+    'accounts', #Application pour la gestion des comptes
+    'patients', #Gestion des patients (Fatima)
+    'alerts', #Système d'alertes (Fatima)
+    'devices', #Gestion des bracelets (Hady)
+    'biometric_data', #Données biométriques (Hady)
 ]
 
 MIDDLEWARE = [
