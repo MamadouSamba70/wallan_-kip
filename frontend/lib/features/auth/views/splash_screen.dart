@@ -43,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     Timer(const Duration(seconds: 3), () {
       if (mounted) {
         // Redirige vers la sélection du portail (HomeScreen) via go_router
-        context.go('/');
+        context.go('/login');
       }
     });
   }
