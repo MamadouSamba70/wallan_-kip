@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../alerts/presentation/screens/alert_repository.dart'; // Dépôt partagé (AlertItem + AlertRepository)
 
 /// Espace Proche / Famille.
 /// Permet à un proche de surveiller à distance les constantes de son parent patient,
@@ -127,26 +128,35 @@ class RelativeDashboard extends StatelessWidget {
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              
-              // 1. Alerte Critique de Température
-              _buildAlertItem(
-                context,
-                title: 'Alerte Température Élevée',
-                value: '38.4 °C (Seuil : 38.0 °C)',
-                date: '05 Juil 2026, 14:23',
-                severity: 'Critique',
-                isCritical: true,
-              ),
-              const SizedBox(height: 12),
-              
-              // 2. Avertissement de Fréquence Cardiaque
-              _buildAlertItem(
-                context,
-                title: 'Alerte Fréquence Cardiaque Basse',
-                value: '58 bpm (Normal)',
-                date: '04 Juil 2026, 09:12',
-                severity: 'Avertissement',
-                isCritical: false,
+
+              // Liste connectée au dépôt partagé AlertRepository : toute nouvelle
+              // alerte (y compris un SOS déclenché depuis SosScreen) apparaît ici
+              // automatiquement, sans recharger l'écran manuellement.
+              ValueListenableBuilder<List<AlertItem>>(                          // Écoute le dépôt partagé
+                valueListenable: AlertRepository.alerts,                         // Source de données observée
+                builder: (context, alertList, _) {                               // Reconstruit à chaque changement
+                  if (alertList.isEmpty) {                                        // Cas d'une liste vide (bonne pratique)
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('Aucune alerte pour le moment', style: TextStyle(color: Colors.grey)),
+                    );
+                  }
+                  return Column(                                                  // Empile toutes les cartes d'alerte
+                    children: alertList.map((alert) {                             // Convertit chaque AlertItem en widget
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),                // Espace entre deux cartes
+                        child: _buildAlertItem(
+                          context,
+                          title: alert.title,                                       // Type d'alerte (ex: "Alerte SOS manuelle")
+                          value: alert.value,                                       // Valeur mesurée ou description de la cause
+                          date: alert.date,                                         // Date/heure de déclenchement
+                          severity: alert.isCritical ? 'Critique' : 'Avertissement', // Libellé du badge
+                          isCritical: alert.isCritical,                             // Détermine la couleur du badge
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
             ],
           ),
