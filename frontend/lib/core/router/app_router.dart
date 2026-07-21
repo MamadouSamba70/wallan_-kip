@@ -3,7 +3,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 import '../../features/auth/views/register_screen.dart';
 import '../../features/auth/views/splash_screen.dart';
-import '../../features/admin/presentation/screens/admin_dashboard.dart';
+import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/patients/presentation/screens/patient_dashboard.dart';
 import '../../features/relatives/presentation/screens/relative_dashboard.dart';
 import '../../features/alerts/presentation/screens/alert_screen.dart';    // Semaine 2 : remplace alerts_overview_screen.dart
@@ -43,7 +43,7 @@ class AppRouter {
       // Route pour la console d'administration (Admin Dashboard)
       GoRoute(
         path: '/admin/dashboard',
-        builder: (context, state) => const AdminDashboard(),
+        builder: (context, state) => const AdminDashboardScreen(),
       ),
       
       // Route pour le tableau de bord du patient
