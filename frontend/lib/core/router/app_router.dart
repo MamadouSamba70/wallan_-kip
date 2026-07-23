@@ -6,8 +6,10 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/admin/presentation/screens/admin_dashboard.dart';
 import '../../features/patients/presentation/screens/patient_dashboard.dart';
 import '../../features/relatives/presentation/screens/relative_dashboard.dart';
+import '../../features/alerts/presentation/screens/notifications_screen.dart'; // Semaine 3 : Notifications Proche
 import '../../features/alerts/presentation/screens/alert_screen.dart';    // Semaine 2 : remplace alerts_overview_screen.dart
 import '../../features/alerts/presentation/screens/sos_screen.dart';      // Semaine 2 : nouvel écran Urgence SOS
+
 
 /// Configuration centralisée de la navigation de l'application Wallan.
 /// Utilise la bibliothèque go_router pour gérer l'historique et les chemins URL.
@@ -60,6 +62,7 @@ class AppRouter {
 
       // Route pour l'écran Alertes (Semaine 2 : version fonctionnelle avec
       // ListView.builder et données simulées, remplace la maquette de S1)
+      
       GoRoute(
         path: '/alerts',                                              // URL affichée dans l'app pour cet écran
         builder: (context, state) => const AlertScreen(),               // Widget construit quand on visite "/alerts"
@@ -69,6 +72,12 @@ class AppRouter {
       GoRoute(
         path: '/sos',                                                  // URL affichée dans l'app pour cet écran
         builder: (context, state) => const SosScreen(),                  // Widget construit quand on visite "/sos"
+      ),
+
+      // Route pour l'écran Notifications de l'espace Proche (Semaine 3)
+      GoRoute(
+        path: '/relative/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );
