@@ -28,4 +28,8 @@ urlpatterns = [
     path('api/', include('patients.urls')),
     path('api/', include('alerts.urls')),
     path('api/devices/', include('devices.urls')),
+    
+    # Route pour les données biométriques
+    path('api/biometrics/', include('biometric_data.urls')),
+
 ]
