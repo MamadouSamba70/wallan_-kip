@@ -10,6 +10,7 @@ import '../../features/relatives/presentation/screens/relative_dashboard.dart';
 import '../../features/alerts/presentation/screens/alert_screen.dart';
 import '../../features/alerts/presentation/screens/admin_alert_list_screen.dart';
 import '../../features/alerts/presentation/screens/sos_screen.dart';
+import '../../features/alerts/presentation/screens/notifications_screen.dart'; // Semaine 3 : Notifications Proche
 
 /// Configuration centralisée de la navigation de l'application Wallan.
 /// Utilise la bibliothèque go_router pour gérer l'historique et les chemins URL.
@@ -81,6 +82,12 @@ class AppRouter {
       GoRoute(
         path: '/sos',
         builder: (context, state) => const SosScreen(),
+      ),
+
+      // Route pour l'écran Notifications de l'espace Proche (Semaine 3)
+      GoRoute(
+        path: '/relative/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );

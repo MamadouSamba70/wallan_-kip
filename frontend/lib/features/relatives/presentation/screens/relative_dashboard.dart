@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../alerts/presentation/screens/alert_repository.dart'; // Dépôt partagé (AlertItem + AlertRepository)
+import '../../../alerts/presentation/screens/notifications_controller.dart'; // Semaine 3 : état lu/non lu des notifications Proche
 
 /// Espace Proche / Famille.
 /// Permet à un proche de surveiller à distance les constantes de son parent patient,
@@ -12,11 +13,28 @@ class RelativeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    NotificationsController.ensureInitialized(); // Sécurise le branchement du contrôleur (idempotent)
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Espace Proche Wallan'),
         actions: [
+          // Cloche de notifications avec badge du nombre de non-lues
+          // (Semaine 3 : ouvre NotificationsScreen sur "/relative/notifications")
+          ValueListenableBuilder<int>(
+            valueListenable: NotificationsController.unreadCount,
+            builder: (context, unread, _) {
+              return IconButton(
+                icon: Badge(
+                  label: Text('$unread'),
+                  isLabelVisible: unread > 0, // Cache le badge s'il n'y a rien à lire
+                  child: const Icon(Icons.notifications_rounded),
+                ),
+                tooltip: 'Notifications',
+                onPressed: () => context.push('/relative/notifications'),
+              );
+            },
+          ),
           // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
