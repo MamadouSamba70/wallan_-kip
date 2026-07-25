@@ -1,22 +1,23 @@
 import uuid
 from django.db import models
-from django.conf import settings
 from devices.models import Device
 
 
 class BiometricReading(models.Model):
     """
-    Stocke une mesure biométrique envoyée par le bracelet.
+    Stocke une mesure biométrique envoyée par le bracelet ESP32.
     Supporte le mode hors-ligne : les mesures prises sans connexion
     sont stockées localement puis synchronisées plus tard (is_synced_offline=True).
+
+    CORRECTION SEMAINE 3 : FK patient pointe vers patients.Patient
+    (et non plus vers User) pour accéder directement aux seuils d'alerte du patient.
     """
 
-    # Identifiant unique généré automatiquement
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Patient dont proviennent les données
+    # Patient dont proviennent les données — accès direct aux seuils via patient.threshold_*
     patient = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'patients.Patient',
         on_delete=models.CASCADE,
         related_name='biometric_readings'
     )
@@ -37,7 +38,7 @@ class BiometricReading(models.Model):
     # Saturation en oxygène en pourcentage (SpO2)
     spo2 = models.IntegerField()
 
-    # Données brutes de l'accéléromètre (mouvements du patient) stockées en JSON
+    # Données brutes de l'accéléromètre stockées en JSON
     movement_data = models.JSONField(null=True, blank=True)
 
     # Date et heure de la mesure réelle sur le bracelet (pas forcément l'heure d'envoi)
@@ -46,14 +47,13 @@ class BiometricReading(models.Model):
     # Date et heure de réception par le serveur
     synced_at = models.DateTimeField(auto_now_add=True)
 
-    # True si la donnée a été envoyée après une coupure réseau (synchronisation différée)
+    # True si la donnée a été envoyée après une coupure réseau
     is_synced_offline = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'biometric_readings'
         verbose_name = 'Mesure biométrique'
         verbose_name_plural = 'Mesures biométriques'
-        # Tri par défaut : les mesures les plus récentes en premier
         ordering = ['-recorded_at']
 
     def __str__(self):
@@ -66,12 +66,11 @@ class LocationLog(models.Model):
     Utilisé par les proches pour localiser le patient en cas d'urgence.
     """
 
-    # Identifiant unique généré automatiquement
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Patient concerné par cette position
+    # Patient concerné — même logique, FK vers patients.Patient
     patient = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'patients.Patient',
         on_delete=models.CASCADE,
         related_name='location_logs'
     )
