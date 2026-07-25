@@ -5,31 +5,42 @@ import '../../../../core/theme/app_theme.dart';
 import '../../models/admin_stats_model.dart';
 import '../../viewmodels/admin_dashboard_viewmodel.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/simulated_line_chart.dart';
+import '../widgets/simulated_bar_chart.dart';
+import '../../../patients/presentation/screens/patient_list_screen.dart';
+import '../../../alerts/presentation/screens/admin_alert_list_screen.dart';
 
-/// Écran principal du Dashboard Administrateur en architecture MVVM.
-/// Propose une vue synthétique des indicateurs clés (Patients, Bracelets, Alertes actives, Alertes critiques)
-/// ainsi qu'une navigation fonctionnelle vers les autres modules du système Wallan.
-class AdminDashboardScreen extends ConsumerWidget {
+/// Console d'Administration complète du Projet Wallan (Semaine 3).
+/// Architecture MVVM réactive, intégration responsive multi-écrans (Desktop/Tablette/Mobile),
+/// graphiques simulés de télémétrie et prêt pour la connexion API Django.
+class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(adminDashboardViewModelProvider);
     final viewModel = ref.read(adminDashboardViewModelProvider.notifier);
-    final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final isWideScreen = screenWidth >= 850;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Console Admin Wallan'),
+        title: Text(_getAppBarTitle(_selectedIndex)),
         centerTitle: false,
         actions: [
-          // Bouton Rafraîchir les données simulées
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Rafraîchir les données',
             onPressed: () => viewModel.refresh(),
           ),
-          // Bouton Déconnexion
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Déconnexion',
@@ -45,112 +56,279 @@ class AdminDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: state.isLoading
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: AppTheme.primaryBlue),
-                    SizedBox(height: 16),
-                    Text('Chargement des statistiques...'),
+      body: isWideScreen
+          ? Row(
+              children: [
+                // Rail de navigation pour grands écrans (Desktop / Tablette)
+                NavigationRail(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (int index) {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                  labelType: NavigationRailLabelType.all,
+                  selectedIconTheme: const IconThemeData(color: AppTheme.primaryBlue, size: 28),
+                  unselectedIconTheme: IconThemeData(color: Colors.grey.shade600),
+                  selectedLabelTextStyle: const TextStyle(
+                    color: AppTheme.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.dashboard_rounded),
+                      label: Text('Aperçu'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.people_alt_rounded),
+                      label: Text('Patients'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.notifications_active_rounded),
+                      label: Text('Alertes'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.insights_rounded),
+                      label: Text('Analytiques'),
+                    ),
                   ],
                 ),
-              )
-            : RefreshIndicator(
-                onRefresh: () => viewModel.refresh(),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- En-tête de bienvenue ---
-                      _buildHeader(context),
-                      const SizedBox(height: 20),
+                const VerticalDivider(thickness: 1, width: 1),
+                Expanded(
+                  child: _buildBodyTab(_selectedIndex, state, viewModel, isWideScreen),
+                ),
+              ],
+            )
+          : _buildBodyTab(_selectedIndex, state, viewModel, isWideScreen),
+      bottomNavigationBar: !isWideScreen
+          ? BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) => setState(() => _selectedIndex = index),
+              selectedItemColor: AppTheme.primaryBlue,
+              unselectedItemColor: Colors.grey.shade600,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.dashboard_rounded),
+                  label: 'Aperçu',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people_alt_rounded),
+                  label: 'Patients',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.notifications_active_rounded),
+                  label: 'Alertes',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.insights_rounded),
+                  label: 'Analytiques',
+                ),
+              ],
+            )
+          : null,
+    );
+  }
 
-                      // --- Affichage d'erreur éventuel ---
-                      if (state.errorMessage != null)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.errorRed.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.errorRed),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.error_outline, color: AppTheme.errorRed),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  state.errorMessage!,
-                                  style: const TextStyle(color: AppTheme.errorRed),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+  String _getAppBarTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Console Admin Wallan';
+      case 1:
+        return 'Gestion des Patients';
+      case 2:
+        return 'Supervision des Alertes';
+      case 3:
+        return 'Analytiques & Télémétrie';
+      default:
+        return 'Admin Wallan';
+    }
+  }
 
-                      // --- Section Cartes Statistiques (4 cartes demandées) ---
-                      Text(
-                        'Aperçu du Système',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryBlue,
-                        ),
+  Widget _buildBodyTab(int index, state, viewModel, bool isWideScreen) {
+    switch (index) {
+      case 0:
+        return _buildOverviewTab(context, state, viewModel, isWideScreen);
+      case 1:
+        return const PatientListScreen();
+      case 2:
+        return const AdminAlertListScreen();
+      case 3:
+        return _buildAnalyticsTab(context);
+      default:
+        return _buildOverviewTab(context, state, viewModel, isWideScreen);
+    }
+  }
+
+  /// Onglet 0 : Vue d'ensemble du Dashboard Admin
+  Widget _buildOverviewTab(BuildContext context, state, viewModel, bool isWideScreen) {
+    final theme = Theme.of(context);
+
+    if (state.isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: AppTheme.primaryBlue),
+            SizedBox(height: 16),
+            Text('Chargement du Dashboard...'),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => viewModel.refresh(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isWideScreen ? 24.0 : 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner de bienvenue
+            _buildHeader(context),
+            const SizedBox(height: 20),
+
+            // Message d'erreur si présent
+            if (state.errorMessage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.errorRed.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.errorRed),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTheme.errorRed),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        state.errorMessage!,
+                        style: const TextStyle(color: AppTheme.errorRed),
                       ),
-                      const SizedBox(height: 12),
-                      _buildStatGrid(context, state.stats),
-                      const SizedBox(height: 24),
-
-                      // --- Section Actions Rapides & Navigation ---
-                      Text(
-                        'Actions Rapides & Navigation',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryBlue,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildQuickActions(context),
-                      const SizedBox(height: 28),
-
-                      // --- Section Liste des Bracelets / Appareils sous supervision ---
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Bracelets Connectés Récents',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Affichage de la liste complète des bracelets'),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.list_alt_rounded, size: 18),
-                            label: const Text('Voir tout'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDeviceList(context, state.stats.recentDevices),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+
+            // --- Section Cartes Statistiques Clés ---
+            Text(
+              'Aperçu du Système',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryBlue,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildStatGrid(context, state.stats, isWideScreen),
+            const SizedBox(height: 24),
+
+            // --- Section Actions Rapides ---
+            Text(
+              'Actions Rapides & Supervision',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryBlue,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildQuickActions(context),
+            const SizedBox(height: 28),
+
+            // --- Section Graphiques Simulés (Jeudi) ---
+            Text(
+              'Télémétrie & Historique des Événements (Graphiques Simulés)',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryBlue,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            if (isWideScreen)
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SimulatedLineChart(
+                      title: 'Fréquence Cardiaque Moyenne (24h)',
+                      subtitle: 'Évolution globale sur l\'ensemble du réseau',
+                      dataPoints: [72, 74, 76, 80, 85, 82, 78, 75, 76, 74],
+                      labels: ['00h', '03h', '06h', '09h', '12h', '15h', '18h', '21h', '24h'],
+                      lineColor: AppTheme.primaryBlue,
+                      unit: 'BPM',
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: SimulatedBarChart(
+                      title: 'Distribution des Alertes (Semaine)',
+                      subtitle: 'Vérification par catégorie d\'incident',
+                      dataGroups: [
+                        BarChartDataGroup(label: 'SpO2', value: 14, color: AppTheme.errorRed),
+                        BarChartDataGroup(label: 'Pouls', value: 9, color: AppTheme.warningOrange),
+                        BarChartDataGroup(label: 'SOS', value: 6, color: AppTheme.errorRed),
+                        BarChartDataGroup(label: 'Batt.', value: 12, color: AppTheme.secondaryBlue),
+                        BarChartDataGroup(label: 'Net.', value: 4, color: Colors.teal),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              const SimulatedLineChart(
+                title: 'Fréquence Cardiaque Moyenne (24h)',
+                subtitle: 'Évolution globale sur l\'ensemble du réseau',
+                dataPoints: [72, 74, 76, 80, 85, 82, 78, 75, 76, 74],
+                labels: ['00h', '03h', '06h', '09h', '12h', '15h', '18h', '21h', '24h'],
+                lineColor: AppTheme.primaryBlue,
+                unit: 'BPM',
+              ),
+              const SizedBox(height: 16),
+              const SimulatedBarChart(
+                title: 'Distribution des Alertes (Semaine)',
+                subtitle: 'Vérification par catégorie d\'incident',
+                dataGroups: [
+                  BarChartDataGroup(label: 'SpO2', value: 14, color: AppTheme.errorRed),
+                  BarChartDataGroup(label: 'Pouls', value: 9, color: AppTheme.warningOrange),
+                  BarChartDataGroup(label: 'SOS', value: 6, color: AppTheme.errorRed),
+                  BarChartDataGroup(label: 'Batt.', value: 12, color: AppTheme.secondaryBlue),
+                  BarChartDataGroup(label: 'Net.', value: 4, color: Colors.teal),
+                ],
+              ),
+            ],
+            const SizedBox(height: 28),
+
+            // --- Section Bracelets Récent ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Bracelets Connectés Récents',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() => _selectedIndex = 1); // Basculer vers l'onglet patients
+                  },
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: const Text('Voir tous les patients'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildDeviceList(context, state.stats.recentDevices),
+          ],
+        ),
       ),
     );
   }
 
-  /// Widget de salutations personnalisé pour l'admin
+  /// Header de salutation avec style moderne
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
@@ -214,31 +392,24 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Grille affichant les 4 cartes statistiques clés demandées dans les spécifications
-  Widget _buildStatGrid(BuildContext context, AdminStatsModel stats) {
+  /// Grille de statistiques clés adaptative
+  Widget _buildStatGrid(BuildContext context, AdminStatsModel stats, bool isWideScreen) {
     return GridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: isWideScreen ? 4 : 2,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.25,
+      childAspectRatio: isWideScreen ? 1.4 : 1.25,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: [
-        // 1. Carte : Nombre de patients
         StatCard(
           title: 'Patients Inscrits',
           value: '${stats.patientCount}',
           subtitle: 'Patients suivis',
           icon: Icons.people_alt_rounded,
           iconColor: AppTheme.primaryBlue,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Gestion de ${stats.patientCount} patients')),
-            );
-          },
+          onTap: () => setState(() => _selectedIndex = 1),
         ),
-
-        // 2. Carte : Nombre de bracelets
         StatCard(
           title: 'Bracelets Actifs',
           value: '${stats.braceletCount}',
@@ -247,22 +418,18 @@ class AdminDashboardScreen extends ConsumerWidget {
           iconColor: AppTheme.secondaryBlue,
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Supervision de ${stats.braceletCount} bracelets')),
+              SnackBar(content: Text('Supervision de ${stats.braceletCount} bracelets actifs')),
             );
           },
         ),
-
-        // 3. Carte : Alertes actives
         StatCard(
           title: 'Alertes Actives',
           value: '${stats.activeAlertsCount}',
           subtitle: 'Avis en cours',
           icon: Icons.notifications_active_rounded,
           iconColor: AppTheme.warningOrange,
-          onTap: () => context.go('/alerts'),
+          onTap: () => setState(() => _selectedIndex = 2),
         ),
-
-        // 4. Carte : Alertes critiques
         StatCard(
           title: 'Alertes Critiques',
           value: '${stats.criticalAlertsCount}',
@@ -275,7 +442,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Range d'actions rapides et de raccourcis de navigation
+  /// Rangée d'actions rapides
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       children: [
@@ -283,9 +450,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  _showRegisterDeviceDialog(context);
-                },
+                onPressed: () => _showRegisterDeviceDialog(context),
                 icon: const Icon(Icons.add_to_queue_rounded, size: 20),
                 label: const Text('Nouveau Bracelet'),
                 style: ElevatedButton.styleFrom(
@@ -296,9 +461,9 @@ class AdminDashboardScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => context.go('/alerts'),
-                icon: const Icon(Icons.notifications_active_outlined, size: 20),
-                label: const Text('Voir Alertes'),
+                onPressed: () => setState(() => _selectedIndex = 1),
+                icon: const Icon(Icons.people_alt_outlined, size: 20),
+                label: const Text('Liste Patients'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: const BorderSide(color: AppTheme.primaryBlue),
@@ -312,9 +477,21 @@ class AdminDashboardScreen extends ConsumerWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
+                onPressed: () => setState(() => _selectedIndex = 2),
+                icon: const Icon(Icons.notifications_active_outlined, size: 20),
+                label: const Text('Gestion Alertes'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppTheme.warningOrange),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
                 onPressed: () => context.go('/sos'),
                 icon: const Icon(Icons.sos_rounded, color: AppTheme.errorRed, size: 20),
-                label: const Text('Centre Urgences SOS', style: TextStyle(color: AppTheme.errorRed)),
+                label: const Text('Centre Urgences', style: TextStyle(color: AppTheme.errorRed)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: const BorderSide(color: AppTheme.errorRed),
@@ -327,7 +504,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Dialogue de simulation pour l'enregistrement d'un nouveau bracelet
+  /// Dialogue pour enregistrer un bracelet ESP32
   void _showRegisterDeviceDialog(BuildContext context) {
     final controller = TextEditingController();
     showDialog(
@@ -372,13 +549,13 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Génère la liste visuelle des dispositifs connectés
+  /// Liste des dispositifs sous supervision
   Widget _buildDeviceList(BuildContext context, List<AdminDeviceModel> devices) {
     if (devices.isEmpty) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text('Aucun bracelet enregistré pour le moment.'),
+          child: Text('Aucun bracelet enregistré.'),
         ),
       );
     }
@@ -388,7 +565,6 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Carte individuelle pour chaque bracelet connecté
   Widget _buildDeviceCard(BuildContext context, AdminDeviceModel device) {
     final theme = Theme.of(context);
 
@@ -439,7 +615,6 @@ class AdminDashboardScreen extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Badge statut
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -460,7 +635,6 @@ class AdminDashboardScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                // Badge batterie
                 Row(
                   children: [
                     Icon(
@@ -489,6 +663,70 @@ class AdminDashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Onglet 3 : Analytiques & Télémétrie avec moniteur API Backend
+  Widget _buildAnalyticsTab(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Moniteur Statut API Backend
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryLight.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.cloud_done_rounded, color: AppTheme.primaryBlue, size: 28),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Statut de Connexion API Django Backend',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Prêt pour l\'intégration (ApiClient Dio / http://10.0.2.2:8000/api/v1)',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.check_circle_rounded, color: AppTheme.successGreen),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          const SimulatedLineChart(
+            title: 'Tendance Saturation en Oxygène (SpO2 %)',
+            subtitle: 'Moyenne globale des patients suivis',
+            dataPoints: [98, 97, 98, 99, 97, 98, 98, 99],
+            labels: ['00h', '04h', '08h', '12h', '16h', '20h', '24h'],
+            lineColor: Colors.teal,
+            unit: '%',
+          ),
+          const SizedBox(height: 16),
+
+          const SimulatedLineChart(
+            title: 'Température Corporelle (°C)',
+            subtitle: 'Moyenne réseau sur 24 heures',
+            dataPoints: [36.5, 36.6, 36.7, 36.8, 36.6, 36.5, 36.6],
+            labels: ['00h', '04h', '08h', '12h', '16h', '20h', '24h'],
+            lineColor: AppTheme.warningOrange,
+            unit: '°C',
+          ),
+        ],
       ),
     );
   }
