@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import BiometricReading, LocationLog
+from devices.models import Device
 
 
 class BiometricReadingSerializer(serializers.ModelSerializer):
@@ -58,7 +59,7 @@ class BiometricSyncSerializer(serializers.ModelSerializer):
     Sérialiseur pour la synchronisation d'une mesure hors-ligne.
     Endpoint : POST /api/biometrics/sync/
 
-    Identique à BiometricReadingCreateSerializer mais force is_synced_offline=True.
+    Force is_synced_offline=True lors de la création.
     """
 
     class Meta:
@@ -83,6 +84,10 @@ class BiometricSyncSerializer(serializers.ModelSerializer):
                 {'spo2': 'SpO2 invalide (plage : 50–100 %).'}
             )
         return data
+
+    def create(self, validated_data):
+        validated_data['is_synced_offline'] = True
+        return super().create(validated_data)
 
 
 class LocationLogSerializer(serializers.ModelSerializer):
