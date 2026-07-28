@@ -9,21 +9,18 @@ import '../viewmodels/auth_viewmodel.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // POURQUOI ConsumerStatefulWidget ici ?
 //
-// Le SplashScreen doit maintenant :
+// Le SplashScreen doit :
 //   1. Afficher l'animation de démarrage (durée minimum 2s pour le branding)
 //   2. EN PARALLÈLE, vérifier si une session JWT valide existe dans le Keystore
-//   3. Rediriger intelligemment :
+//   3. Rediriger intelligemment avec un TIMEOUT DE SÉCURITÉ DE 3.5s :
 //      - Session valide → Dashboard du bon rôle (Admin/Patient/Proche)
-//      - Pas de session  → LoginScreen
-//
-// On utilise ConsumerStatefulWidget pour accéder à ref (Riverpod)
-// tout en maintenant le cycle de vie de l'animation.
+//      - Pas de session / Erreur / Timeout → LoginScreen
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Écran de démarrage intelligent de l'application Wallan.
 ///
 /// Gère simultanément l'animation de branding et la vérification de session JWT.
-/// Redirige vers le bon écran en fonction de l'état de la session.
+/// Redirige vers le bon écran en fonction de l'état de la session sans jamais se bloquer.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -52,40 +49,48 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _animationController.forward();
 
-    // ── Vérification de session + redirection ─────────────────────────────────
-    // On lance les deux en parallèle et on attend que les deux soient terminés.
-    // La durée minimale de 2s garantit que l'animation est visible (branding).
+    // ── Vérification de session + redirection sécurisée ────────────────────────
     _initializeAndNavigate();
   }
 
   Future<void> _initializeAndNavigate() async {
-    // Lance la vérification de session et le délai minimum en parallèle
-    final results = await Future.wait([
-      ref.read(authViewModelProvider.notifier).checkExistingSession(),
-      Future.delayed(const Duration(seconds: 2)), // Délai branding minimum
-    ]);
+    try {
+      // Lance la vérification de session et le délai branding minimum en parallèle.
+      // Un timeout global de 3.5 secondes garantit que l'app ne reste JAMAIS bloquée.
+      final results = await Future.wait([
+        ref.read(authViewModelProvider.notifier).checkExistingSession(),
+        Future.delayed(const Duration(seconds: 2)),
+      ]).timeout(
+        const Duration(milliseconds: 3500),
+        onTimeout: () => [null, null],
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    // results[0] est le résultat de checkExistingSession() (UserModel ou null)
-    final user = results[0] as UserModel?;
+      final user = results[0] as UserModel?;
 
-    if (user != null) {
-      // ✅ Session valide → rediriger vers le bon dashboard selon le rôle
-      switch (user.role) {
-        case UserRole.admin:
-          context.go('/admin/dashboard');
-          break;
-        case UserRole.patient:
-          context.go('/patient/dashboard');
-          break;
-        case UserRole.relative:
-          context.go('/relative/dashboard');
-          break;
+      if (user != null) {
+        // ✅ Session valide → rediriger vers le bon dashboard selon le rôle
+        switch (user.role) {
+          case UserRole.admin:
+            context.go('/admin/dashboard');
+            break;
+          case UserRole.patient:
+            context.go('/patient/dashboard');
+            break;
+          case UserRole.relative:
+            context.go('/relative/dashboard');
+            break;
+        }
+      } else {
+        // ❌ Pas de session → aller au Login
+        context.go('/login');
       }
-    } else {
-      // ❌ Pas de session → aller au Login
-      context.go('/login');
+    } catch (e) {
+      debugPrint('SplashScreen navigation error: $e');
+      if (mounted) {
+        context.go('/login');
+      }
     }
   }
 
