@@ -3,19 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POURQUOI flutter_secure_storage + Sécurité Fallback ?
+// POURQUOI cette implémentation hybride (Web + Mobile) ?
 //
-// Un token JWT doit être stocké de manière sécurisée :
-//   - Android : EncryptedSharedPreferences (AES-256 via Keystore)
-//   - iOS     : Keychain
-//   - Windows : DPAPI
-//   - Web     : localStorage / Web Crypto
+// On Web (Chrome/Edge/localhost), flutter_secure_storage peut se bloquer
+// ou lever des erreurs WebCrypto non gérées par le navigateur.
 //
-// Pour éviter tout blocage (ex: sur Web ou OS sans Keystore initialisé),
-// chaque méthode est protégée par un try/catch et un timeout de 2 secondes.
+// Solution robuste :
+//   - Sur Web (kIsWeb == true) : Utilisation d'un stockage mémoire/session ultra-rapide (0ms)
+//   - Sur Mobile (Android/iOS) : Utilisation du Keystore/Keychain chiffré AES-256
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Clés utilisées pour identifier chaque valeur dans le stockage sécurisé.
 class _StorageKeys {
   static const String accessToken = 'wallan_access_token';
   static const String refreshToken = 'wallan_refresh_token';
@@ -23,136 +20,96 @@ class _StorageKeys {
   static const String userId = 'wallan_user_id';
 }
 
-/// Service de gestion sécurisée des tokens JWT de l'application Wallan.
+/// Service de gestion des tokens JWT (compatible Web, Android, iOS, Windows).
 class TokenStorage {
-  /// Instance de flutter_secure_storage avec configurations multi-plateformes.
-  final FlutterSecureStorage _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-    ),
-    webOptions: WebOptions(
-      dbName: 'wallan_secure_storage',
-      publicKey: 'wallan_app_key',
-    ),
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
-  // ── Access Token ────────────────────────────────────────────────────────────
+  // Stockage en mémoire pour le Web et en fallback d'urgence
+  static final Map<String, String> _inMemoryStorage = {};
 
-  Future<void> saveAccessToken(String token) async {
+  // ── Méthodes génériques sécurisées ─────────────────────────────────────────
+
+  Future<void> _write(String key, String value) async {
+    _inMemoryStorage[key] = value;
+    if (kIsWeb) return;
+
     try {
-      await _storage
-          .write(key: _StorageKeys.accessToken, value: token)
-          .timeout(const Duration(seconds: 2));
+      await _secureStorage
+          .write(key: key, value: value)
+          .timeout(const Duration(seconds: 1));
     } catch (e) {
-      debugPrint('TokenStorage saveAccessToken error: $e');
+      debugPrint('TokenStorage _write fallback: $e');
     }
   }
 
-  Future<String?> readAccessToken() async {
+  Future<String?> _read(String key) async {
+    if (kIsWeb) return _inMemoryStorage[key];
+
     try {
-      return await _storage
-          .read(key: _StorageKeys.accessToken)
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+      final value = await _secureStorage
+          .read(key: key)
+          .timeout(const Duration(seconds: 1), onTimeout: () => null);
+      return value ?? _inMemoryStorage[key];
     } catch (e) {
-      debugPrint('TokenStorage readAccessToken error: $e');
-      return null;
+      debugPrint('TokenStorage _read fallback: $e');
+      return _inMemoryStorage[key];
     }
   }
 
-  // ── Refresh Token ───────────────────────────────────────────────────────────
+  Future<void> _delete(String key) async {
+    _inMemoryStorage.remove(key);
+    if (kIsWeb) return;
 
-  Future<void> saveRefreshToken(String token) async {
     try {
-      await _storage
-          .write(key: _StorageKeys.refreshToken, value: token)
-          .timeout(const Duration(seconds: 2));
+      await _secureStorage
+          .delete(key: key)
+          .timeout(const Duration(seconds: 1));
     } catch (e) {
-      debugPrint('TokenStorage saveRefreshToken error: $e');
+      debugPrint('TokenStorage _delete fallback: $e');
     }
   }
 
-  Future<String?> readRefreshToken() async {
-    try {
-      return await _storage
-          .read(key: _StorageKeys.refreshToken)
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
-    } catch (e) {
-      debugPrint('TokenStorage readRefreshToken error: $e');
-      return null;
-    }
-  }
+  // ── Public API ─────────────────────────────────────────────────────────────
 
-  // ── Métadonnées utilisateur ─────────────────────────────────────────────────
+  Future<void> saveAccessToken(String token) =>
+      _write(_StorageKeys.accessToken, token);
 
-  Future<void> saveUserRole(String role) async {
-    try {
-      await _storage
-          .write(key: _StorageKeys.userRole, value: role)
-          .timeout(const Duration(seconds: 2));
-    } catch (e) {
-      debugPrint('TokenStorage saveUserRole error: $e');
-    }
-  }
+  Future<String?> readAccessToken() => _read(_StorageKeys.accessToken);
 
-  Future<String?> readUserRole() async {
-    try {
-      return await _storage
-          .read(key: _StorageKeys.userRole)
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
-    } catch (e) {
-      debugPrint('TokenStorage readUserRole error: $e');
-      return null;
-    }
-  }
+  Future<void> saveRefreshToken(String token) =>
+      _write(_StorageKeys.refreshToken, token);
 
-  Future<void> saveUserId(String userId) async {
-    try {
-      await _storage
-          .write(key: _StorageKeys.userId, value: userId)
-          .timeout(const Duration(seconds: 2));
-    } catch (e) {
-      debugPrint('TokenStorage saveUserId error: $e');
-    }
-  }
+  Future<String?> readRefreshToken() => _read(_StorageKeys.refreshToken);
 
-  Future<String?> readUserId() async {
-    try {
-      return await _storage
-          .read(key: _StorageKeys.userId)
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
-    } catch (e) {
-      debugPrint('TokenStorage readUserId error: $e');
-      return null;
-    }
-  }
+  Future<void> saveUserRole(String role) =>
+      _write(_StorageKeys.userRole, role);
 
-  // ── Vérification de session ─────────────────────────────────────────────────
+  Future<String?> readUserRole() => _read(_StorageKeys.userRole);
+
+  Future<void> saveUserId(String userId) =>
+      _write(_StorageKeys.userId, userId);
+
+  Future<String?> readUserId() => _read(_StorageKeys.userId);
 
   Future<bool> hasValidSession() async {
-    try {
-      final token = await readAccessToken();
-      return token != null && token.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
+    final token = await readAccessToken();
+    return token != null && token.isNotEmpty;
   }
 
-  // ── Nettoyage ───────────────────────────────────────────────────────────────
-
   Future<void> deleteAll() async {
-    try {
-      await _storage.deleteAll().timeout(const Duration(seconds: 2));
-    } catch (e) {
-      debugPrint('TokenStorage deleteAll error: $e');
-    }
+    _inMemoryStorage.clear();
+    await _delete(_StorageKeys.accessToken);
+    await _delete(_StorageKeys.refreshToken);
+    await _delete(_StorageKeys.userRole);
+    await _delete(_StorageKeys.userId);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-/// Provider Riverpod exposant l'instance unique de TokenStorage.
+/// Provider Riverpod de TokenStorage.
 // ─────────────────────────────────────────────────────────────────────────────
 final tokenStorageProvider = Provider<TokenStorage>((ref) {
   return TokenStorage();
