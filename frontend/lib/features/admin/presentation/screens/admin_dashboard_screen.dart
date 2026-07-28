@@ -9,6 +9,7 @@ import '../widgets/simulated_line_chart.dart';
 import '../widgets/simulated_bar_chart.dart';
 import '../../../patients/presentation/screens/patient_list_screen.dart';
 import '../../../alerts/presentation/screens/admin_alert_list_screen.dart';
+import '../../../auth/viewmodels/auth_viewmodel.dart';
 
 /// Console d'Administration complète du Projet Wallan (Semaine 3).
 /// Architecture MVVM réactive, intégration responsive multi-écrans (Desktop/Tablette/Mobile),
@@ -44,14 +45,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Déconnexion',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Déconnexion de la session Administrateur'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-              context.go('/');
+            onPressed: () async {
+              // Vrai logout : supprime les tokens JWT et invalide la session côté serveur
+              await ref.read(authViewModelProvider.notifier).logout();
+              if (context.mounted) context.go('/login');
             },
           ),
         ],
@@ -674,38 +671,59 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Moniteur Statut API Backend
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryLight.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.cloud_done_rounded, color: AppTheme.primaryBlue, size: 28),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Statut de Connexion API Django Backend',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Prêt pour l\'intégration (ApiClient Dio / http://10.0.2.2:8000/api/v1)',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
-                    ],
-                  ),
+          // Statut de connexion API — mis à jour dynamiquement selon isFromApi
+          Builder(builder: (context) {
+            final dashState = ref.watch(adminDashboardViewModelProvider);
+            final isConnected = dashState.isFromApi;
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isConnected
+                    ? AppTheme.successGreen.withValues(alpha: 0.08)
+                    : AppTheme.warningOrange.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isConnected
+                      ? AppTheme.successGreen.withValues(alpha: 0.4)
+                      : AppTheme.warningOrange.withValues(alpha: 0.4),
                 ),
-                const Icon(Icons.check_circle_rounded, color: AppTheme.successGreen),
-              ],
-            ),
-          ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isConnected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                    color: isConnected ? AppTheme.successGreen : AppTheme.warningOrange,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isConnected
+                              ? '✅ API Django connectée — Données en direct'
+                              : '⚠️ Mode fallback — Backend non joignable',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: isConnected ? AppTheme.successGreen : AppTheme.warningOrange,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isConnected
+                              ? 'GET /api/admin/dashboard/ → ${dashState.stats.patientCount} patients, ${dashState.stats.braceletCount} bracelets'
+                              : 'Endpoint : http://10.0.2.2:8000/api/admin/dashboard/',
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
           const SizedBox(height: 20),
 
           const SimulatedLineChart(

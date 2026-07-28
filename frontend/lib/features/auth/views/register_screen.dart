@@ -40,6 +40,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   bool _obscureConfirm = true;
   String _selectedRole = 'patient'; // Rôle sélectionné par défaut
 
+  // ── Erreurs de validation retournées par le backend Django ─────────────────
+  // Quand Django retourne { "email": ["Ce champ est déjà utilisé."] },
+  // on stocke ces erreurs ici et on les affiche directement sous le bon champ.
+  final Map<String, String> _fieldErrors = {};
+
   // ── Animation d'entrée ────────────────────────────────────────────────────
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -82,13 +87,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   // ── Action d'inscription ───────────────────────────────────────────────────
   /// Déclenche la validation puis appelle le ViewModel pour s'inscrire.
+  /// Gère les erreurs locales (validation Flutter) ET les erreurs backend (Django).
   Future<void> _onRegisterPressed() async {
-    // Ferme le clavier
+    // 1. Efface les erreurs backend précédentes avant une nouvelle tentative
+    setState(() => _fieldErrors.clear());
+
+    // 2. Ferme le clavier
     FocusScope.of(context).unfocus();
 
-    // Valide tous les champs du formulaire
+    // 3. Validation locale des champs (règles côté Flutter)
     if (!_formKey.currentState!.validate()) return;
 
+    // 4. Appel au ViewModel → AuthRepository → API Django
     final viewModel = ref.read(authViewModelProvider.notifier);
     final success = await viewModel.register(
       name: _nameController.text.trim(),
@@ -101,15 +111,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     if (!mounted) return;
 
     if (success) {
-      // ✅ Inscription réussie : affiche un SnackBar et retourne au Login
+      // ✅ Inscription réussie → SnackBar succès + redirection vers Login
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
-              const Icon(Icons.check_circle_outline,
-                  color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              const Expanded(
+              Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
                 child: Text(
                   'Compte créé ! Connectez-vous maintenant.',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -119,20 +128,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           ),
           backgroundColor: AppTheme.successGreen,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.all(16),
           duration: const Duration(seconds: 3),
         ),
       );
-
-      // Redirige vers le Login après un court délai
       await Future.delayed(const Duration(milliseconds: 800));
       if (mounted) context.go('/login');
     } else {
-      // ❌ Erreur : affiche le message d'erreur via SnackBar
-      final errorMessage = ref.read(authViewModelProvider).errorMessage;
-      if (mounted && errorMessage != null) {
+      // ❌ Échec → analyse le type d'erreur
+      final errorMessage = ref.read(authViewModelProvider).errorMessage ?? '';
+
+      // Tente d'injecter les erreurs champ par champ depuis le message backend.
+      // Exemple de message parsé : "Email: Ce champ est déjà utilisé."
+      final injected = _tryInjectFieldError(errorMessage);
+
+      if (injected) {
+        // Les erreurs sont affichées directement sous les champs → re-valider
+        _formKey.currentState?.validate();
+      } else if (errorMessage.isNotEmpty) {
+        // Erreur globale (ex: serveur down, timeout) → SnackBar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -144,8 +159,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             ),
             backgroundColor: AppTheme.errorRed,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -153,9 +167,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     }
   }
 
+  /// Tente d'injecter une erreur backend dans le champ concerné.
+  /// Retourne true si l'erreur a été injectée dans un champ spécifique.
+  bool _tryInjectFieldError(String message) {
+    // Mapping entre les préfixes d'erreur et les clés de champs
+    final fieldMap = {
+      'Email': 'email',
+      'Téléphone': 'phone',
+      'Mot de passe': 'password',
+      'Nom': 'name',
+      'Rôle': 'role',
+    };
+
+    for (final entry in fieldMap.entries) {
+      if (message.startsWith('${entry.key}:')) {
+        setState(() {
+          _fieldErrors[entry.value] = message.replaceFirst('${entry.key}: ', '');
+        });
+        return true;
+      }
+    }
+    return false;
+  }
+
   // ── Validateurs des champs ─────────────────────────────────────────────────
+  // Chaque validateur vérifie d'abord les règles locales, puis les erreurs
+  // backend injectées via _fieldErrors (erreurs de validation Django).
 
   String? _validateName(String? value) {
+    if (_fieldErrors.containsKey('name')) return _fieldErrors['name'];
     if (value == null || value.trim().isEmpty) {
       return 'Le nom complet est obligatoire';
     }
@@ -169,6 +209,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   String? _validateEmail(String? value) {
+    // Affiche l'erreur backend en priorité (ex: "Email déjà utilisé")
+    if (_fieldErrors.containsKey('email')) return _fieldErrors['email'];
     if (value == null || value.trim().isEmpty) {
       return 'L\'adresse email est obligatoire';
     }
@@ -180,6 +222,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   String? _validatePhone(String? value) {
+    if (_fieldErrors.containsKey('phone')) return _fieldErrors['phone'];
     if (value == null || value.trim().isEmpty) {
       return 'Le numéro de téléphone est obligatoire';
     }
@@ -192,6 +235,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   String? _validatePassword(String? value) {
+    if (_fieldErrors.containsKey('password')) return _fieldErrors['password'];
     if (value == null || value.isEmpty) {
       return 'Le mot de passe est obligatoire';
     }
@@ -374,6 +418,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
               enabled: !isLoading,
+              // Efface l'erreur backend dès que l'utilisateur retape
+              onChanged: (_) => setState(() => _fieldErrors.remove('name')),
               onFieldSubmitted: (_) => _emailFocus.requestFocus(),
               decoration: const InputDecoration(
                 labelText: 'Nom complet *',
@@ -391,6 +437,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               enabled: !isLoading,
+              // Efface l'erreur backend "email déjà utilisé" dès que l'utilisateur retape
+              onChanged: (_) => setState(() => _fieldErrors.remove('email')),
               onFieldSubmitted: (_) => _phoneFocus.requestFocus(),
               decoration: const InputDecoration(
                 labelText: 'Adresse Email *',
@@ -408,6 +456,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
               enabled: !isLoading,
+              onChanged: (_) => setState(() => _fieldErrors.remove('phone')),
               onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
               decoration: const InputDecoration(
                 labelText: 'Téléphone *',

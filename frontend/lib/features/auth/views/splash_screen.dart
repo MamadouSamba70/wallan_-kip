@@ -1,20 +1,38 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../models/user_model.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
-/// Écran de démarrage de l'application (Splash Screen).
-/// Cet écran s'affiche au lancement de l'application, présente l'identité visuelle de Wallan
-/// et redirige automatiquement l'utilisateur vers l'accueil après un court délai de 3 secondes.
-class SplashScreen extends StatefulWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// POURQUOI ConsumerStatefulWidget ici ?
+//
+// Le SplashScreen doit maintenant :
+//   1. Afficher l'animation de démarrage (durée minimum 2s pour le branding)
+//   2. EN PARALLÈLE, vérifier si une session JWT valide existe dans le Keystore
+//   3. Rediriger intelligemment :
+//      - Session valide → Dashboard du bon rôle (Admin/Patient/Proche)
+//      - Pas de session  → LoginScreen
+//
+// On utilise ConsumerStatefulWidget pour accéder à ref (Riverpod)
+// tout en maintenant le cycle de vie de l'animation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Écran de démarrage intelligent de l'application Wallan.
+///
+/// Gère simultanément l'animation de branding et la vérification de session JWT.
+/// Redirige vers le bon écran en fonction de l'état de la session.
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  // Contrôleur d'animation pour l'effet de fondu (Fade In)
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -22,35 +40,57 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
 
-    // Initialisation de l'animation sur une durée de 1.5 seconde
+    // ── Animation de fade-in ─────────────────────────────────────────────────
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
 
-    // Définition de l'effet de fondu (de 0.0 complètement transparent à 1.0 visible)
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeIn,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
 
-    // Démarrage de l'animation
     _animationController.forward();
 
-    // Déclenchement du délai de 3 secondes avant la redirection vers la page d'accueil
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        // Redirige vers la sélection du portail (HomeScreen) via go_router
-        context.go('/login');
+    // ── Vérification de session + redirection ─────────────────────────────────
+    // On lance les deux en parallèle et on attend que les deux soient terminés.
+    // La durée minimale de 2s garantit que l'animation est visible (branding).
+    _initializeAndNavigate();
+  }
+
+  Future<void> _initializeAndNavigate() async {
+    // Lance la vérification de session et le délai minimum en parallèle
+    final results = await Future.wait([
+      ref.read(authViewModelProvider.notifier).checkExistingSession(),
+      Future.delayed(const Duration(seconds: 2)), // Délai branding minimum
+    ]);
+
+    if (!mounted) return;
+
+    // results[0] est le résultat de checkExistingSession() (UserModel ou null)
+    final user = results[0] as UserModel?;
+
+    if (user != null) {
+      // ✅ Session valide → rediriger vers le bon dashboard selon le rôle
+      switch (user.role) {
+        case UserRole.admin:
+          context.go('/admin/dashboard');
+          break;
+        case UserRole.patient:
+          context.go('/patient/dashboard');
+          break;
+        case UserRole.relative:
+          context.go('/relative/dashboard');
+          break;
       }
-    });
+    } else {
+      // ❌ Pas de session → aller au Login
+      context.go('/login');
+    }
   }
 
   @override
   void dispose() {
-    // Libération du contrôleur d'animation pour éviter les fuites de mémoire
     _animationController.dispose();
     super.dispose();
   }
@@ -59,24 +99,23 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // Dégradé de fond bleu royal haut de gamme conforme à la nouvelle charte graphique
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.primaryBlue, // Bleu royal officiel
-              Color(0xFF003087),   // Bleu marine plus profond
+              AppTheme.primaryBlue,
+              Color(0xFF003087),
             ],
           ),
         ),
         child: FadeTransition(
-          opacity: _fadeAnimation, // Applique l'effet de fondu
+          opacity: _fadeAnimation,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // --- Logo de l'application ---
+                // ── Logo ───────────────────────────────────────────────────
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -91,7 +130,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 32),
 
-                // --- Nom de la marque ---
+                // ── Nom de la marque ────────────────────────────────────────
                 const Text(
                   'WALLAN',
                   style: TextStyle(
@@ -103,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 12),
 
-                // --- Sous-titre descriptif ---
+                // ── Sous-titre ──────────────────────────────────────────────
                 const Text(
                   'Bracelet Intelligent de Surveillance Médicale',
                   textAlign: TextAlign.center,
@@ -115,7 +154,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 64),
 
-                // --- Indicateur de chargement circulaire ---
+                // ── Indicateur de chargement ────────────────────────────────
                 const SizedBox(
                   width: 32,
                   height: 32,
@@ -125,10 +164,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 24),
-                
-                // --- Texte de chargement ---
+
+                // ── Texte de statut ─────────────────────────────────────────
                 const Text(
-                  'Initialisation du système...',
+                  'Vérification de la session...',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white60,
