@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/wallan_logo.dart';
 import '../models/user_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
@@ -121,19 +122,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // ── Logo ───────────────────────────────────────────────────
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.health_and_safety_rounded,
-                    size: 100,
-                    color: Colors.white,
-                  ),
-                ),
+                // ── Logo Officiel Wallan ─────────────────────────────────
+                const WallanLogo(size: 130, showBadge: true),
                 const SizedBox(height: 32),
 
                 // ── Nom de la marque ────────────────────────────────────────

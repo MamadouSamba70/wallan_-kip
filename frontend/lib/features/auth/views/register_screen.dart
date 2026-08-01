@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/wallan_logo.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -354,26 +355,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           ),
         ),
         const SizedBox(height: 4),
-        // Logo
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryBlue,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryBlue.withValues(alpha: 0.3),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.person_add_alt_1_rounded,
-            size: 44,
-            color: Colors.white,
-          ),
-        ),
+        // Logo Officiel Wallan
+        const WallanLogo(size: 85, showBadge: true),
         const SizedBox(height: 20),
         Text(
           'Créer un compte',

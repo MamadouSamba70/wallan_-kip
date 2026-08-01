@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/wallan_logo.dart';
 import '../models/user_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
@@ -135,27 +136,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── En-tête avec logo ──────────────────────────────
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryBlue.withValues(alpha: 0.35),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.health_and_safety_rounded,
-                            size: 52,
-                            color: Colors.white,
-                          ),
-                        ),
+                      // ── En-tête avec logo officiel Wallan ──────────────
+                      const Center(
+                        child: WallanLogo(size: 95, showBadge: true),
                       ),
                       const SizedBox(height: 28),
                       Text(

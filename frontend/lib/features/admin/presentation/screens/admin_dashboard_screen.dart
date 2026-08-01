@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/wallan_logo.dart';
 import '../../models/admin_stats_model.dart';
 import '../../viewmodels/admin_dashboard_viewmodel.dart';
 import '../widgets/stat_card.dart';
@@ -34,7 +35,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getAppBarTitle(_selectedIndex)),
+        title: Row(
+          children: [
+            const WallanLogo(size: 32, showBadge: false),
+            const SizedBox(width: 12),
+            Text(_getAppBarTitle(_selectedIndex)),
+          ],
+        ),
         centerTitle: false,
         actions: [
           IconButton(
@@ -58,6 +65,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               children: [
                 // Rail de navigation pour grands écrans (Desktop / Tablette)
                 NavigationRail(
+                  leading: const Padding(
+                    padding: EdgeInsets.only(top: 12, bottom: 20),
+                    child: WallanLogo(size: 52, showBadge: true),
+                  ),
                   selectedIndex: _selectedIndex,
                   onDestinationSelected: (int index) {
                     setState(() {
