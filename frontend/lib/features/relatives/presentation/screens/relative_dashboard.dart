@@ -35,6 +35,12 @@ class RelativeDashboard extends StatelessWidget {
               );
             },
           ),
+          // Accès à l'écran Statistiques (Semaine 4)
+          IconButton(
+            icon: const Icon(Icons.show_chart_rounded),
+            tooltip: 'Voir les statistiques',
+            onPressed: () => context.push('/statistics'),
+          ),
           // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
