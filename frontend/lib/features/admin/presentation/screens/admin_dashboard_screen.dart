@@ -38,8 +38,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         title: Row(
           children: [
             const WallanLogo(size: 32, showBadge: false),
-            const SizedBox(width: 12),
-            Text(_getAppBarTitle(_selectedIndex)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _getAppBarTitle(_selectedIndex),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
           ],
         ),
         centerTitle: false,
@@ -404,9 +411,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   Widget _buildStatGrid(BuildContext context, AdminStatsModel stats, bool isWideScreen) {
     return GridView.count(
       crossAxisCount: isWideScreen ? 4 : 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: isWideScreen ? 1.4 : 1.25,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: isWideScreen ? 1.4 : 1.08,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: [

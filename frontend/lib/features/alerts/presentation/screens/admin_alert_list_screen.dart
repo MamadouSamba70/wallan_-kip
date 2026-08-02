@@ -16,16 +16,6 @@ class AdminAlertListScreen extends ConsumerWidget {
     final filteredAlerts = state.filteredAlerts;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Supervision des Alertes'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Rafraîchir',
-            onPressed: () => viewModel.refresh(),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -184,7 +174,7 @@ class AdminAlertListScreen extends ConsumerWidget {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(14.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -224,21 +214,21 @@ class AdminAlertListScreen extends ConsumerWidget {
                   Text(
                     '${alert.status.label} • ${_formatTime(alert.timestamp)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
               // Titre et Description
               Text(
                 alert.title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 15,
                 ),
               ),
               const SizedBox(height: 4),
@@ -246,24 +236,28 @@ class AdminAlertListScreen extends ConsumerWidget {
                 alert.description,
                 style: TextStyle(
                   color: Colors.grey.shade700,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Infos Patient & MAC
+              // Infos Patient & MAC responsive
               Row(
                 children: [
-                  Icon(Icons.person_outline_rounded, size: 16, color: Colors.grey.shade600),
+                  Icon(Icons.person_outline_rounded, size: 15, color: Colors.grey.shade600),
                   const SizedBox(width: 4),
-                  Text(
-                    '${alert.patientName} (${alert.roomNumber})',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                  Expanded(
+                    child: Text(
+                      '${alert.patientName} (${alert.roomNumber})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 6),
                   Text(
                     alert.braceletMac,
                     style: TextStyle(
@@ -274,52 +268,58 @@ class AdminAlertListScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               const Divider(height: 1),
               const SizedBox(height: 8),
 
-              // Boutons d'actions de prise en charge et résolution
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (alert.status == AlertStatus.active)
-                    OutlinedButton.icon(
-                      onPressed: () => viewModel.acknowledgeAlert(alert.id),
-                      icon: const Icon(Icons.touch_app_rounded, size: 16),
-                      label: const Text('Prendre en charge'),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                  if (alert.status != AlertStatus.resolved) ...[
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () => viewModel.resolveAlert(alert.id),
-                      icon: const Icon(Icons.check_rounded, size: 16),
-                      label: const Text('Marquer Résolue'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.successGreen,
-                        foregroundColor: Colors.white,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                  ],
-                  if (alert.status == AlertStatus.resolved)
-                    const Row(
-                      children: [
-                        Icon(Icons.check_circle_rounded, color: AppTheme.successGreen, size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          'Alerte Traitée & Clôturée',
-                          style: TextStyle(
-                            color: AppTheme.successGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+              // Boutons d'actions avec Wrap pour éviter tout débordement
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    if (alert.status == AlertStatus.active)
+                      OutlinedButton.icon(
+                        onPressed: () => viewModel.acknowledgeAlert(alert.id),
+                        icon: const Icon(Icons.touch_app_rounded, size: 14),
+                        label: const Text('Prendre en charge', style: TextStyle(fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         ),
-                      ],
-                    ),
-                ],
+                      ),
+                    if (alert.status != AlertStatus.resolved)
+                      ElevatedButton.icon(
+                        onPressed: () => viewModel.resolveAlert(alert.id),
+                        icon: const Icon(Icons.check_rounded, size: 14),
+                        label: const Text('Marquer Résolue', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.successGreen,
+                          foregroundColor: Colors.white,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        ),
+                      ),
+                    if (alert.status == AlertStatus.resolved)
+                      const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle_rounded, color: AppTheme.successGreen, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            'Alerte Traitée & Clôturée',
+                            style: TextStyle(
+                              color: AppTheme.successGreen,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

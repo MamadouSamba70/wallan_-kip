@@ -5,7 +5,7 @@ import '../../models/patient_model.dart';
 import '../../viewmodels/patient_list_viewmodel.dart';
 import '../widgets/patient_detail_modal.dart';
 
-/// Écran complet de la Liste des Patients pour l'Administrateur.
+/// Écran de la Liste des Patients pour l'Administrateur.
 /// Intègre la barre de recherche temps réel, les puces de filtres par statut et la liste réactive.
 class PatientListScreen extends ConsumerWidget {
   const PatientListScreen({super.key});
@@ -18,16 +18,6 @@ class PatientListScreen extends ConsumerWidget {
     final filteredList = state.filteredPatients;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Liste & Suivi des Patients'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Rafraîchir',
-            onPressed: () => viewModel.refresh(),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -158,7 +148,7 @@ class PatientListScreen extends ConsumerWidget {
     );
   }
 
-  /// Carte individuelle de Patient
+  /// Carte individuelle de Patient responsive
   Widget _buildPatientCard(BuildContext context, PatientModel patient) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -168,65 +158,73 @@ class PatientListScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: () => PatientDetailModal.show(context, patient),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(14.0),
           child: Column(
             children: [
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 24,
+                    radius: 22,
                     backgroundColor: patient.status.color.withValues(alpha: 0.15),
                     child: Icon(
                       patient.gender == 'Homme' ? Icons.face_rounded : Icons.face_3_rounded,
                       color: patient.status.color,
-                      size: 26,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Text(
-                              patient.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            Flexible(
+                              child: Text(
+                                patient.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             Text(
                               '(${patient.id})',
                               style: TextStyle(
                                 color: Colors.grey.shade500,
-                                fontSize: 12,
+                                fontSize: 11,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           '${patient.roomNumber} • ${patient.braceletMac}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 12,
+                            fontSize: 11,
                             fontFamily: 'monospace',
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: patient.status.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(patient.status.icon, size: 14, color: patient.status.color),
+                        Icon(patient.status.icon, size: 12, color: patient.status.color),
                         const SizedBox(width: 4),
                         Text(
                           patient.status.label,
@@ -241,7 +239,7 @@ class PatientListScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 10),
 
@@ -284,7 +282,7 @@ class PatientListScreen extends ConsumerWidget {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: color),
+        Icon(icon, size: 15, color: color),
         const SizedBox(width: 4),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
