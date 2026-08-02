@@ -33,14 +33,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework', #Django Rest Framework(Construction de l'API)
-    'rest_framework_simplejwt', #JSON Web Token(Authentification)
-    'rest_framework_simplejwt.token_blacklist', #Token Blacklist(Deconnexion)
-    'accounts', #Application pour la gestion des comptes
-    'patients', #Gestion des patients (Fatima)
-    'alerts', #Système d'alertes (Fatima)
-    'devices', #Gestion des bracelets (Hady)
-    'biometric_data', #Données biométriques (Hady)
+    'rest_framework',                        # Django Rest Framework
+    'rest_framework_simplejwt',              # JSON Web Token
+    'rest_framework_simplejwt.token_blacklist', # Token Blacklist (déconnexion)
+    'channels',                              # WebSocket temps réel (semaine 4)
+    'accounts',                              # Gestion des comptes (Hadjiratou)
+    'patients',                              # Gestion des patients (Fatima)
+    'alerts',                                # Système d'alertes (Fatima)
+    'devices',                               # Gestion des bracelets (Hady)
+    'biometric_data',                        # Données biométriques (Hady)
 ]
 
 MIDDLEWARE = [
@@ -71,6 +72,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'wallan.wsgi.application'
+
+# Configuration ASGI pour Django Channels (WebSocket)
+ASGI_APPLICATION = 'wallan.asgi.application'
+
+# Channel Layer en mémoire pour le développement local
+# En production : remplacer par Redis (channels_redis)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 # Database
 DATABASES = {
