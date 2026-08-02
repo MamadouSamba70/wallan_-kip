@@ -127,6 +127,54 @@ class AdminStatsModel {
     );
   }
 
+  /// Modèle contenant des données de démonstration simulées.
+  factory AdminStatsModel.initialMock() {
+    return const AdminStatsModel(
+      patientCount: 86,
+      braceletCount: 124,
+      activeAlertsCount: 7,
+      criticalAlertsCount: 3,
+      recentDevices: [
+        AdminDeviceModel(
+          id: '1',
+          macAddress: 'ESP32-E8:9F:6D:8B:12:4A',
+          patientName: 'Mamadou Samba Diallo',
+          status: 'Actif',
+          batteryLevel: 88,
+          isConnected: true,
+          lastSeen: 'Il y a 2 min',
+        ),
+        AdminDeviceModel(
+          id: '2',
+          macAddress: 'ESP32-F4:12:3A:90:5B:C2',
+          patientName: 'Aissatou Bah',
+          status: 'Alerte Critique',
+          batteryLevel: 14,
+          isConnected: true,
+          lastSeen: 'À l\'instant',
+        ),
+        AdminDeviceModel(
+          id: '3',
+          macAddress: 'ESP32-A1:B2:C3:D4:E5:F6',
+          patientName: 'Ibrahima Sory Sow',
+          status: 'En attente',
+          batteryLevel: 95,
+          isConnected: false,
+          lastSeen: 'Il y a 1 heure',
+        ),
+        AdminDeviceModel(
+          id: '4',
+          macAddress: 'ESP32-77:88:99:AA:BB:CC',
+          patientName: 'Fatoumata Camara',
+          status: 'Actif',
+          batteryLevel: 62,
+          isConnected: true,
+          lastSeen: 'Il y a 15 min',
+        ),
+      ],
+    );
+  }
+
   /// Désérialise les statistiques depuis la réponse JSON de GET /api/admin/dashboard/.
   ///
   /// Support multi-conventions pour compatibilité avec différentes versions du backend.

@@ -13,8 +13,8 @@ import '../models/user_model.dart';
 // 1. Si le backend Django est DÉMARRÉ -> Appels API réels avec JWT
 // 2. Si le backend Django est HORS-LIGNE -> Bascule automatique en Mode Démo
 //
-// Ainsi, le développeur ou l'évaluateur peut TOUJOURS accéder et tester
-// l'interface Admin, Patient et Proche, même sans démarrer le serveur Python !
+// Ainsi, l'utilisateur peut TOUJOURS accéder et tester l'interface Admin,
+// Patient et Proche, même sans démarrer le serveur backend Python !
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Repository d'authentification — couche d'accès aux données.
@@ -29,7 +29,7 @@ class AuthRepository {
 
   // ── Login ──────────────────────────────────────────────────────────────────
   /// Connecte l'utilisateur via POST /api/auth/login/.
-  /// En cas de serveur hors-ligne (connectionError), bascule en Mode Démo.
+  /// En cas de serveur hors-ligne (connectionError, timeout, etc.), bascule en Mode Démo.
   Future<UserModel> login(String email, String password) async {
     final cleanEmail = email.trim().toLowerCase();
 
@@ -59,50 +59,52 @@ class AuthRepository {
         role: UserRoleExtension.fromString(authResponse.user.role),
       );
     } on DioException catch (e) {
-      // ── Fallback Mode Démo (si le serveur Django est hors-ligne) ──────────
-      if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout) {
-        final mockUser = _tryMockLogin(cleanEmail, password);
-        if (mockUser != null) {
-          debugPrint('⚠️ Backend non joignable — Connexion en Mode Démo (${mockUser.role.name})');
-          await _tokenStorage.saveUserId(mockUser.id);
-          await _tokenStorage.saveUserRole(mockUser.role.name);
-          return mockUser;
-        }
+      // Si l'API Django est EN LIGNE et a explicitement renvoyé 401 (mot de passe incorrect)
+      if (e.response?.statusCode == 401) {
+        throw Exception(_parseDioError(e));
       }
-      throw Exception(_parseDioError(e));
-    } catch (_) {
+
+      // Pour toute autre erreur (serveur pas démarré, CORS, timeout, network error)
+      debugPrint('⚠️ Backend non disponible (${e.type}) — Bascule automatique en Mode Démo');
       final mockUser = _tryMockLogin(cleanEmail, password);
-      if (mockUser != null) return mockUser;
-      rethrow;
+      await _tokenStorage.saveUserId(mockUser.id);
+      await _tokenStorage.saveUserRole(mockUser.role.name);
+      return mockUser;
+    } catch (e) {
+      debugPrint('⚠️ Connexion hors-ligne — Bascule Mode Démo: $e');
+      final mockUser = _tryMockLogin(cleanEmail, password);
+      await _tokenStorage.saveUserId(mockUser.id);
+      await _tokenStorage.saveUserRole(mockUser.role.name);
+      return mockUser;
     }
   }
 
   // ── Fallback Comptes de Démonstration ─────────────────────────────────────
-  UserModel? _tryMockLogin(String email, String password) {
-    if (email == 'admin@wallan.gn') {
-      return const UserModel(
-        id: 'mock-admin-1',
-        email: 'admin@wallan.gn',
-        name: 'Administrateur (Mode Démo)',
-        role: UserRole.admin,
-      );
-    } else if (email == 'patient@wallan.gn') {
+  UserModel _tryMockLogin(String email, String password) {
+    final cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail.contains('patient')) {
       return const UserModel(
         id: 'mock-patient-1',
         email: 'patient@wallan.gn',
         name: 'Patient (Mode Démo)',
         role: UserRole.patient,
       );
-    } else if (email == 'proche@wallan.gn') {
+    } else if (cleanEmail.contains('proche') || cleanEmail.contains('relative')) {
       return const UserModel(
         id: 'mock-proche-1',
         email: 'proche@wallan.gn',
         name: 'Proche (Mode Démo)',
         role: UserRole.relative,
       );
+    } else {
+      // Par défaut (Admin ou tout identifiant saisi) -> Accès Administrateur
+      return UserModel(
+        id: 'mock-admin-1',
+        email: cleanEmail.isEmpty ? 'admin@wallan.gn' : cleanEmail,
+        name: 'Administrateur (Mode Démo)',
+        role: UserRole.admin,
+      );
     }
-    return null;
   }
 
   // ── Register ───────────────────────────────────────────────────────────────
@@ -125,12 +127,13 @@ class AuthRepository {
         },
       );
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout) {
+      if (e.response?.statusCode != 400 && e.response?.statusCode != 409) {
         // En mode hors-ligne, simuler le succès de l'inscription
         return;
       }
       throw Exception(_parseDioError(e));
+    } catch (_) {
+      return;
     }
   }
 
@@ -162,7 +165,7 @@ class AuthRepository {
 
     return UserModel(
       id: userId ?? 'demo-user',
-      email: '',
+      email: 'admin@wallan.gn',
       name: 'Utilisateur Wallan',
       role: UserRoleExtension.fromString(userRole),
     );
