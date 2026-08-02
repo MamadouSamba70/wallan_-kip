@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../alerts/presentation/screens/alert_repository.dart'; // Dépôt partagé (AlertItem + AlertRepository)
-import '../../../alerts/presentation/screens/notifications_controller.dart'; // Semaine 3 : état lu/non lu des notifications Proche
+import '../../../alerts/presentation/screens/alert_repository.dart';
+import '../../../alerts/presentation/screens/notifications_controller.dart';
+import '../../../../core/widgets/wallan_logo.dart';
 
 /// Espace Proche / Famille.
 /// Permet à un proche de surveiller à distance les constantes de son parent patient,
@@ -17,17 +18,28 @@ class RelativeDashboard extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Espace Proche Wallan'),
+        title: Row(
+          children: const [
+            WallanLogo(size: 28, showBadge: false),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Espace Proche Wallan',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 17),
+              ),
+            ),
+          ],
+        ),
         actions: [
-          // Cloche de notifications avec badge du nombre de non-lues
-          // (Semaine 3 : ouvre NotificationsScreen sur "/relative/notifications")
           ValueListenableBuilder<int>(
             valueListenable: NotificationsController.unreadCount,
             builder: (context, unread, _) {
               return IconButton(
                 icon: Badge(
                   label: Text('$unread'),
-                  isLabelVisible: unread > 0, // Cache le badge s'il n'y a rien à lire
+                  isLabelVisible: unread > 0,
                   child: const Icon(Icons.notifications_rounded),
                 ),
                 tooltip: 'Notifications',
@@ -35,11 +47,11 @@ class RelativeDashboard extends StatelessWidget {
               );
             },
           ),
-          // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Déconnexion',
             onPressed: () => context.go('/'),
-          )
+          ),
         ],
       ),
       body: SafeArea(
@@ -51,14 +63,20 @@ class RelativeDashboard extends StatelessWidget {
               // --- En-tête Proche ---
               Text(
                 'Bonjour, Diallo Proche',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 'Vous surveillez l\'état de santé de : Mamadou Diallo',
-                style: theme.textTheme.bodyMedium,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.black54,
+                ),
               ),
               const SizedBox(height: 24),
 

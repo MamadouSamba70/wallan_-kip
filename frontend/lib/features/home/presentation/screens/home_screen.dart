@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/wallan_logo.dart';
 
 /// Écran d'accueil principal (Landing Screen).
 /// Permet de sélectionner le portail utilisateur correspondant (Patient, Proche, Admin).
@@ -9,126 +11,147 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Récupération des informations sur le thème actuel
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // --- Logo & Titre de l'Application ---
-                Icon(
-                  Icons.health_and_safety_rounded, // Icône de santé de signature
-                  size: 80,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'WALLAN',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.displayLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Bracelet Intelligent de Surveillance Médicale',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // --- Section Portails ---
-                Text(
-                  'Portails Utilisateurs (Simulés)',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-
-                // Portail 1 : Patient
-                _buildPortalCard(
-                  context,
-                  title: 'Patient',
-                  subtitle: 'Suivi des constantes & alertes',
-                  icon: Icons.person_rounded,
-                  color: theme.colorScheme.primary,
-                  onTap: () => context.push('/patient/dashboard'), // Redirige vers le dashboard patient
-                ),
-                const SizedBox(height: 16),
-                
-                // Portail 2 : Proche / Famille
-                _buildPortalCard(
-                  context,
-                  title: 'Proche / Famille',
-                  subtitle: 'Surveillance à distance & urgences',
-                  icon: Icons.family_restroom_rounded,
-                  color: Colors.indigo,
-                  onTap: () => context.push('/relative/dashboard'), // Redirige vers le dashboard proche
-                ),
-                const SizedBox(height: 16),
-                
-                // Portail 3 : Administrateur
-                _buildPortalCard(
-                  context,
-                  title: 'Administrateur',
-                  subtitle: 'Gestion des bracelets et des alertes',
-                  icon: Icons.admin_panel_settings_rounded,
-                  color: Colors.blueGrey,
-                  onTap: () => context.push('/admin/dashboard'), // Redirige vers le dashboard admin
-                ),
-                const SizedBox(height: 32),
-
-                // --- Ligne de Séparation ---
-                const Divider(),
-                const SizedBox(height: 16),
-
-                // --- Boutons Raccourcis Connexion & Inscription ---
-                Row(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.bgLight,
+              AppTheme.primaryLight,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Bouton de connexion
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => context.push('/login'), // Navigue vers l'écran de Login
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Connexion'),
+                    // --- Logo & Titre de l'Application ---
+                    const Center(child: WallanLogo(size: 90, showBadge: true)),
+                    const SizedBox(height: 20),
+                    Text(
+                      'WALLAN',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        color: AppTheme.primaryBlue,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 34,
+                        letterSpacing: 3.0,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Bouton d'inscription
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => context.push('/register'), // Navigue vers l'écran de Register
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Bracelet Intelligent de Surveillance Médicale',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.black54,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // --- Section Portails ---
+                    Text(
+                      'Accéder à votre espace',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryBlue,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Portail 1 : Patient
+                    _buildPortalCard(
+                      context,
+                      title: 'Patient',
+                      subtitle: 'Suivi des constantes & alertes',
+                      icon: Icons.monitor_heart_outlined,
+                      color: AppTheme.primaryBlue,
+                      onTap: () => context.go('/login'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Portail 2 : Proche / Famille
+                    _buildPortalCard(
+                      context,
+                      title: 'Proche / Famille',
+                      subtitle: 'Surveillance à distance & urgences',
+                      icon: Icons.family_restroom_rounded,
+                      color: Colors.indigo,
+                      onTap: () => context.go('/login'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Portail 3 : Administrateur
+                    _buildPortalCard(
+                      context,
+                      title: 'Administrateur',
+                      subtitle: 'Gestion des bracelets et des alertes',
+                      icon: Icons.admin_panel_settings_outlined,
+                      color: Colors.blueGrey.shade700,
+                      onTap: () => context.go('/login'),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Ligne de Séparation ---
+                    Divider(color: Colors.grey.shade300),
+                    const SizedBox(height: 16),
+
+                    // --- Boutons Raccourcis Connexion & Inscription ---
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.go('/login'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: AppTheme.primaryBlue),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Connexion',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryBlue,
+                              ),
+                            ),
                           ),
                         ),
-                        child: const Text('Inscription'),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => context.push('/register'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Inscription',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -146,54 +169,57 @@ class HomeScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
-      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: color.withValues(alpha: 0.2)),
+      ),
       child: InkWell(
-        onTap: onTap, // Action déclenchée au clic
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              // Conteneur de l'icône avec fond légèrement transparent
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ),
+                child: Icon(icon, size: 28, color: color),
               ),
               const SizedBox(width: 16),
-              // Textes d'information du portail
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
               ),
-              // Flèche indiquant la possibilité de cliquer
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: isDark ? Colors.white30 : Colors.black26,
+                size: 14,
+                color: Colors.grey.shade400,
               ),
             ],
           ),

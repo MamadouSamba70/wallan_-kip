@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/wallan_logo.dart';
 
 /// Espace santé du Patient.
 /// Permet au patient de visualiser ses constantes vitales actuelles et de déclencher une alerte SOS en cas d'urgence.
@@ -12,19 +14,24 @@ class PatientDashboard extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon Espace Santé'),
+        title: Row(
+          children: const [
+            WallanLogo(size: 28, showBadge: false),
+            SizedBox(width: 10),
+            Text('Mon Espace Santé', style: TextStyle(fontSize: 17)),
+          ],
+        ),
         actions: [
-          // Accès à l'écran Alertes
           IconButton(
             icon: const Icon(Icons.notifications_rounded),
             tooltip: 'Voir les alertes',
             onPressed: () => context.push('/alerts'),
           ),
-          // Déconnexion
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Déconnexion',
             onPressed: () => context.go('/'),
-          )
+          ),
         ],
       ),
       body: SafeArea(
@@ -48,15 +55,19 @@ class PatientDashboard extends StatelessWidget {
                       children: [
                         Text(
                           'Mamadou Diallo',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 20,
+                            fontSize: 18,
                           ),
                         ),
                         Text(
                           'Bracelet connecté • Synchronisé à l\'instant',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.green,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.successGreen,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

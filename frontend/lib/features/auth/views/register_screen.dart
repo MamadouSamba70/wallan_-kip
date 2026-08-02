@@ -592,8 +592,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   // ── Widget: Lien vers la page de connexion ─────────────────────────────────
   Widget _buildLoginLink(ThemeData theme, bool isLoading) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           'Vous avez déjà un compte ?',
