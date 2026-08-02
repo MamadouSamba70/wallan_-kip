@@ -318,20 +318,27 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
             // --- Section Bracelets Récent ---
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Bracelets Connectés Récents',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Bracelets Connectés Récents',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: () {
                     setState(() => _selectedIndex = 1); // Basculer vers l'onglet patients
                   },
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  label: const Text('Voir tous les patients'),
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  label: const Text('Voir tout', style: TextStyle(fontSize: 13)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                 ),
               ],
             ),
@@ -466,21 +473,31 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () => _showRegisterDeviceDialog(context),
-                icon: const Icon(Icons.add_to_queue_rounded, size: 20),
-                label: const Text('Nouveau Bracelet'),
+                icon: const Icon(Icons.add_to_queue_rounded, size: 18),
+                label: const Text(
+                  'Nouveau Bracelet',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13),
+                ),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () => setState(() => _selectedIndex = 1),
-                icon: const Icon(Icons.people_alt_outlined, size: 20),
-                label: const Text('Liste Patients'),
+                icon: const Icon(Icons.people_alt_outlined, size: 18),
+                label: const Text(
+                  'Liste Patients',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13),
+                ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
                   side: const BorderSide(color: AppTheme.primaryBlue),
                 ),
               ),
@@ -493,22 +510,32 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () => setState(() => _selectedIndex = 2),
-                icon: const Icon(Icons.notifications_active_outlined, size: 20),
-                label: const Text('Gestion Alertes'),
+                icon: const Icon(Icons.notifications_active_outlined, size: 18),
+                label: const Text(
+                  'Gestion Alertes',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13),
+                ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
                   side: const BorderSide(color: AppTheme.warningOrange),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () => context.go('/sos'),
-                icon: const Icon(Icons.sos_rounded, color: AppTheme.errorRed, size: 20),
-                label: const Text('Centre Urgences', style: TextStyle(color: AppTheme.errorRed)),
+                icon: const Icon(Icons.sos_rounded, color: AppTheme.errorRed, size: 18),
+                label: const Text(
+                  'Centre Urgences',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: AppTheme.errorRed, fontSize: 13),
+                ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
                   side: const BorderSide(color: AppTheme.errorRed),
                 ),
               ),
@@ -618,9 +645,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     children: [
                       Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
-                      Text(
-                        device.patientName,
-                        style: theme.textTheme.bodyMedium,
+                      Expanded(
+                        child: Text(
+                          device.patientName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ),
                     ],
                   ),
