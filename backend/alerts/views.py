@@ -64,6 +64,63 @@ class AlertViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(alert)
         return Response(serializer.data)
 
+    def perform_create(self, serializer):
+        """
+        [SEMAINE 4 - FATIMA ABDUL SOW]
+        Lorsqu'une alerte est créée en base de données, déclenche automatiquement
+        l'envoi des notifications SMS et Push aux destinataires concernés.
+        """
+        alert = serializer.save()
+        # Déclenchement du dispatch de notification
+        from .services import dispatch_alert_notifications
+        dispatch_alert_notifications(alert)
+
+    @action(detail=True, methods=['post'])
+    def send_notifications(self, request, pk=None):
+        """
+        [SEMAINE 4 - FATIMA ABDUL SOW]
+        Endpoint manuel pour ré-émettre ou déclencher les notifications pour une alerte existante.
+        POST /api/alerts/{id}/send_notifications/
+        """
+        alert = self.get_object()
+        from .services import dispatch_alert_notifications
+        logs = dispatch_alert_notifications(alert)
+        serializer_logs = AlertNotificationLogSerializer(logs, many=True)
+        return Response({
+            'message': f'{len(logs)} notification(s) envoyée(s) ou planifiée(s).',
+            'logs': serializer_logs.data
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def test_sms(self, request):
+        """
+        [SEMAINE 4 - FATIMA ABDUL SOW - LIVRABLE SEMAINE 4]
+        Endpoint de test d'envoi d'un SMS direct via Africa's Talking.
+        POST /api/alerts/test_sms/
+        Body JSON:
+        {
+            "phone_number": "+221770000000",
+            "message": "Message de test Wallan SMS"
+        }
+        """
+        phone_number = request.data.get('phone_number')
+        message = request.data.get('message', 'Ceci est un test de notification SMS Wallan.')
+
+        if not phone_number:
+            return Response(
+                {'error': 'Le champ phone_number est obligatoire pour le test SMS.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .services import AfricasTalkingSMSService
+        sms_service = AfricasTalkingSMSService()
+        result = sms_service.send_sms(phone_number, message)
+
+        return Response({
+            'message': 'Test d\'envoi de SMS exécuté.',
+            'result': result
+        }, status=status.HTTP_200_OK if result.get('status') == 'sent' else status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['get'])
     def notifications(self, request, pk=None):
         """Récupère toutes les notifications pour une alerte."""
