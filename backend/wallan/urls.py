@@ -1,8 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
+from accounts.views import AdminDashboardStatsView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Dashboard Admin (Mamadou Samba Diallo - semaine 5)
+    path('api/admin/dashboard/', AdminDashboardStatsView.as_view(), name='admin-dashboard'),
 
     # Authentification (Hadjiratou)
     path('api/auth/', include('accounts.urls')),
@@ -17,3 +21,4 @@ urlpatterns = [
     # Données biométriques (Hady - semaine 3)
     path('api/biometrics/', include('biometric_data.urls')),
 ]
+
