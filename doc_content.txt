@@ -1,0 +1,703 @@
+
+WALLAN
+Bracelet intelligent de surveillance médicale
+
+Plan de travail et cahier technique
+Backend Django REST Framework · Frontend Flutter
+Durée du projet : 8 semaines (2 mois)
+Équipe de 5 développeurs
+
+Table des matières
+
+
+
+1. Présentation du projet
+Wallan est un bracelet intelligent de surveillance médicale destiné aux patients atteints de rhumatisme en Guinée. Le système collecte en continu des données vitales via un bracelet connecté (température, fréquence cardiaque, saturation en oxygène, mouvements), les transmet à une application mobile, et alerte automatiquement le patient ainsi que ses proches en cas de situation critique — y compris sans connexion internet grâce à l'envoi de SMS.
+1.1 Les trois profils utilisateurs
+Patient : suit ses propres constantes vitales et reçoit les alertes le concernant.
+Proche : surveille l'état de santé d'un patient à distance et reçoit les alertes en cas d'urgence.
+Administrateur : supervise l'ensemble du système, les patients, les appareils et les alertes.
+1.2 Stack technique
+Couche
+Technologie
+Rôle
+Backend
+Django + Django REST Framework
+API REST, logique métier
+Frontend
+Flutter (Dart)
+Application mobile Android / iOS
+Base de données
+PostgreSQL
+Stockage des données
+Stockage local
+SQLite
+Fonctionnement hors connexion
+Authentification
+JWT
+Sécurité des sessions
+SMS
+Africa's Talking API
+Alertes sans connexion internet
+Notifications push
+Firebase Cloud Messaging
+Alertes en temps réel
+Communication bracelet
+Bluetooth Low Energy (BLE)
+Bracelet ↔ smartphone
+Versioning
+Git / GitHub
+Gestion du code source
+1.3 Organisation de l'équipe
+Nom
+Pôle
+Responsabilité principale
+Mamadou Hady Diallo
+Backend
+Modèles Devices et données biométriques
+Fatima Abdul Sow
+Backend
+Modèles Patients et système d'alertes
+Hadjiratou Diallo
+Backend
+Authentification, tests et documentation API
+Mamadou Samba Diallo
+Frontend
+Écrans Authentification et Administration
+Alpha Oumar Bah
+Frontend
+Écrans Alertes, Notifications, Statistiques et Proche
+Note sur l'organisation
+L'équipe est volontairement scindée en deux pôles spécialisés (3 développeurs backend, 2 développeurs frontend) plutôt qu'une répartition mixte où chacun ferait à la fois du Django et du Flutter. Cette organisation permet à chaque membre de se concentrer sur la technologie qu'il maîtrise le mieux et de monter en compétence plus rapidement. Le backend documente ses contrats d'API en amont pour que le frontend puisse travailler avec des données simulées sans attendre que les endpoints réels soient terminés.
+
+2. Association du bracelet à un compte patient
+Chaque bracelet Wallan possède un identifiant matériel unique, comparable à un numéro de carte SIM. Cet identifiant est utilisé pour lier de façon sécurisée un bracelet physique à un seul compte patient à la fois.
+2.1 Principe de fonctionnement
+Chaque ESP32 possède une adresse MAC Bluetooth unique de fabrication, utilisée comme identifiant matériel (hardware_id).
+Cet identifiant est enregistré dans la table Device de la base de données avec un statut « non assigné ».
+Un administrateur (ou le patient via un QR code collé sur le bracelet) associe le bracelet à un compte patient précis.
+Cette association crée un lien permanent entre le device_id et le patient_id dans la base de données.
+À chaque connexion Bluetooth, l'application vérifie que l'identifiant matériel du bracelet correspond bien au patient connecté avant d'accepter ses données.
+Pourquoi c'est important
+Ce mécanisme empêche qu'un bracelet égaré, volé ou mal configuré n'envoie des données dans le mauvais dossier patient. Un bracelet ne peut être assigné qu'à un seul patient actif à la fois ; la table DeviceAssignment conserve l'historique complet des associations passées.
+
+3. Schéma complet de la base de données
+Cette section liste l'intégralité des tables PostgreSQL du projet Wallan, organisées par module. Chaque développeur backend doit s'y référer pour créer ses modèles Django avec les champs exacts.
+3.1 Module accounts — Hadjiratou
+Table : User
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+email
+VARCHAR(255) UNIQUE
+Email de connexion
+password_hash
+VARCHAR(255)
+Mot de passe haché
+role
+ENUM
+patient / proche / admin
+is_active
+BOOLEAN
+Compte actif ou désactivé
+date_joined
+TIMESTAMP
+Date de création du compte
+last_login
+TIMESTAMP
+Dernière connexion
+Table : Profile
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+user_id
+UUID (FK → User)
+Utilisateur associé
+phone
+VARCHAR(20)
+Numéro de téléphone
+photo
+VARCHAR(255)
+URL de la photo de profil
+language
+VARCHAR(5)
+Langue préférée (fr par défaut)
+3.2 Module patients — Fatima
+Table : Patient
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+user_id
+UUID (FK → User)
+Compte utilisateur lié
+full_name
+VARCHAR(255)
+Nom complet
+birth_date
+DATE
+Date de naissance
+condition
+VARCHAR(50)
+Pathologie (rhumatisme)
+threshold_heart_rate
+INTEGER
+Seuil d'alerte rythme cardiaque
+threshold_temperature
+DECIMAL(4,1)
+Seuil d'alerte température
+threshold_spo2
+INTEGER
+Seuil d'alerte SpO2
+created_at
+TIMESTAMP
+Date de création du dossier
+Table : MedicalHistory
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+patient_id
+UUID (FK → Patient)
+Patient concerné
+description
+TEXT
+Description de l'antécédent
+diagnosed_date
+DATE
+Date de diagnostic
+Table : PatientRelative (lien patient ↔ proche)
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+patient_id
+UUID (FK → Patient)
+Patient suivi
+relative_user_id
+UUID (FK → User)
+Compte du proche
+relationship
+VARCHAR(50)
+Lien de parenté
+is_primary_contact
+BOOLEAN
+Contact d'urgence prioritaire
+3.3 Module devices — Hady
+Table : Device
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+hardware_id
+VARCHAR(50) UNIQUE
+Identifiant matériel ESP32 (adresse MAC)
+model
+VARCHAR(50)
+Modèle du bracelet
+firmware_version
+VARCHAR(20)
+Version du firmware embarqué
+status
+ENUM
+unassigned / active / inactive
+registered_at
+TIMESTAMP
+Date d'enregistrement
+Table : DeviceAssignment (historique des associations)
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+device_id
+UUID (FK → Device)
+Bracelet concerné
+patient_id
+UUID (FK → Patient)
+Patient assigné
+assigned_at
+TIMESTAMP
+Date d'association
+unassigned_at
+TIMESTAMP
+Date de fin d'association (null si actif)
+is_current
+BOOLEAN
+Association active actuellement
+Table : DeviceStatus
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+device_id
+UUID (FK → Device)
+Bracelet concerné
+battery_level
+INTEGER
+Niveau de batterie en %
+is_connected
+BOOLEAN
+Connecté actuellement en Bluetooth
+last_sync
+TIMESTAMP
+Dernière synchronisation
+3.4 Module biometric_data — Hady
+Table : BiometricReading
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+patient_id
+UUID (FK → Patient)
+Patient concerné
+device_id
+UUID (FK → Device)
+Bracelet source
+heart_rate
+INTEGER
+Rythme cardiaque (bpm)
+temperature
+DECIMAL(4,1)
+Température corporelle (°C)
+spo2
+INTEGER
+Saturation en oxygène (%)
+movement_data
+JSON
+Données accéléromètre brutes
+recorded_at
+TIMESTAMP
+Date de mesure réelle (sur le bracelet)
+synced_at
+TIMESTAMP
+Date de synchronisation avec le serveur
+is_synced_offline
+BOOLEAN
+Donnée envoyée après une coupure réseau
+Table : LocationLog
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+patient_id
+UUID (FK → Patient)
+Patient concerné
+latitude
+DECIMAL(9,6)
+Latitude GPS
+longitude
+DECIMAL(9,6)
+Longitude GPS
+recorded_at
+TIMESTAMP
+Date de localisation
+3.5 Module alerts — Fatima
+Table : Alert
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+patient_id
+UUID (FK → Patient)
+Patient concerné
+type
+ENUM
+heart_rate / temperature / spo2 / movement
+severity
+ENUM
+warning / critical
+value_detected
+DECIMAL(6,2)
+Valeur mesurée ayant déclenché l'alerte
+threshold_value
+DECIMAL(6,2)
+Seuil dépassé
+status
+ENUM
+active / resolved / false_alarm
+created_at
+TIMESTAMP
+Date de déclenchement
+resolved_at
+TIMESTAMP
+Date de résolution
+Table : AlertNotificationLog
+Champ
+Type
+Description
+id
+UUID (PK)
+Identifiant unique
+alert_id
+UUID (FK → Alert)
+Alerte concernée
+recipient_user_id
+UUID (FK → User)
+Destinataire de la notification
+channel
+ENUM
+sms / push
+status
+ENUM
+sent / failed / delivered
+sent_at
+TIMESTAMP
+Date d'envoi
+
+4. Planning détaillé — semaine par semaine
+Le projet est organisé sur 8 semaines (2 mois), avec une réunion de suivi deux fois par semaine (mardi et vendredi). Chaque membre de l'équipe livre quelque chose de concret chaque semaine, qu'il s'agisse du backend ou du frontend, afin que personne ne reste bloqué en attente d'un module externe pendant plusieurs semaines.
+Principe directeur
+Le frontend travaille toujours avec des données simulées en avance sur le backend réel. Dès qu'un module backend expose son contrat d'API (la structure exacte des données échangées), le frontend peut commencer à construire ses écrans sans attendre que l'implémentation complète soit terminée.
+Semaine 1 — Initialisation et architecture
+Objectif : poser les fondations du projet, créer les structures de code et valider le schéma de base de données en équipe.
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+Initialisation Django + modèle User et Profile
+Migrations PostgreSQL appliquées pour accounts/
+Fatima
+Modèles Patient, MedicalHistory, PatientRelative
+Migrations PostgreSQL appliquées pour patients/
+Hady
+Modèles Device, DeviceAssignment, BiometricReading
+Migrations PostgreSQL appliquées pour devices/ et biometric_data/
+Mamadou Samba
+Initialisation Flutter + thème global + navigation
+Projet Flutter structuré avec go_router et le thème Wallan
+Alpha
+Maquettes des écrans Alertes et Dashboard Proche
+Maquettes validées en réunion
+Réunion 1 (mardi) : présentation du plan de travail, validation du schéma de base de données.
+Réunion 2 (vendredi) : démonstration des migrations Django de chacun, validation collective.
+Semaine 2 — Authentification et CRUD de base
+Objectif : avoir une API d'authentification fonctionnelle et les opérations de base sur les patients et les bracelets.
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+API JWT complète
+Endpoints register / login / logout / me fonctionnels et testés
+Fatima
+API CRUD patients
+Endpoints GET/POST /api/patients/ et GET/PUT/DELETE /api/patients/{id}/ fonctionnels
+Hady
+API d'enregistrement et association des bracelets
+Endpoints register et associate fonctionnels (logique hardware_id)
+Mamadou Samba
+Écran LoginScreen + RegisterScreen Flutter
+Écrans connectés à des données simulées, navigation fonctionnelle
+Alpha
+Structure AlertScreen + SosScreen
+Écrans avec données simulées, bouton SOS visuel fonctionnel
+Réunion 1 (mardi) : démonstration de l'API Auth en cours, ajustements.
+Réunion 2 (vendredi) : démonstration complète Auth + Patients + Devices via Postman.
+Cahier technique — Endpoint d'association bracelet
+POST /api/devices/{id}/associate/ reçoit patient_id et hardware_id. Le backend vérifie que le hardware_id correspond bien au device enregistré, crée une ligne dans DeviceAssignment avec is_current=true, et met à jour le statut du Device à active. Si un autre bracelet était déjà assigné à ce patient, son ancienne association est automatiquement clôturée.
+Semaine 3 — Données biométriques et alertes
+Objectif : permettre la réception des données vitales et la détection automatique des situations critiques.
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+Support de synchronisation hors-ligne (API)
+Endpoint de synchronisation par lot acceptant des mesures horodatées avec is_synced_offline=true
+Fatima
+Modèle Alert + API de détection
+Endpoints GET /api/alerts/ et POST /api/alerts/create/ avec comparaison aux seuils du patient
+Hady
+API de réception des données biométriques
+Endpoint POST /api/biometrics/ recevant heart_rate, temperature, spo2, movement_data
+Mamadou Samba
+Écran AdminDashboard (structure)
+Vue d'ensemble avec données simulées
+Alpha
+RelativeDashboard + NotificationsScreen
+Écrans proche avec données simulées
+Réunion 1 (mardi) : test du flux complet réception de données vers détection d'anomalie vers création d'alerte.
+Réunion 2 (vendredi) : démonstration des écrans Admin et Proche.
+Cahier technique — Logique de détection d'alerte
+À chaque réception d'une BiometricReading, le backend compare automatiquement les valeurs reçues aux seuils définis dans le modèle Patient. Si un seuil est dépassé, une Alert est créée automatiquement avec severity=critical si l'écart est important, ou warning sinon.
+Semaine 4 — Notifications et tests
+Objectif : faire sortir les alertes vers l'extérieur (SMS, push) et fiabiliser ce qui existe.
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+Tests Postman complets + documentation API
+Collection Postman couvrant tous les endpoints Auth, Patients, Devices
+Fatima
+Intégration SMS Africa's Talking + Push Firebase
+Endpoint d'envoi SMS testé avec un vrai message
+Hady
+Historique biométrique + préparation WebSocket
+Endpoint d'historique + recherche technique Django Channels
+Mamadou Samba
+Intégration API réelle dans Auth + Admin Flutter
+Connexion Dio fonctionnelle remplaçant les données simulées
+Alpha
+Statistics Dashboard Flutter
+Écran avec graphiques fl_chart sur données simulées
+Réunion 1 (mardi) : test d'envoi SMS réel via Africa's Talking.
+Réunion 2 (vendredi) : bilan de mi-projet, démonstration de toutes les briques backend assemblées.
+Livrable de mi-projet (fin semaine 4)
+Backend complet et fonctionnel : authentification, gestion patients, gestion bracelets, réception de données biométriques, détection d'alertes, envoi de SMS et notifications push. Frontend avec navigation complète et premiers écrans connectés aux vraies APIs.
+Semaine 5 — Intégration complète Flutter / Django
+Objectif : connecter tous les écrans Flutter restants aux APIs réelles du backend.
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+Support technique intégration + corrections API
+Bugs remontés par le frontend corrigés sous 48h
+Fatima
+Finalisation API recommandations et historique patient
+Endpoint d'historique patient complet
+Hady
+Intégration Bluetooth BLE (connexion simulateur)
+Service Flutter connecté à un bracelet simulé
+Mamadou Samba
+Connexion complète Admin Dashboard à l'API
+Toutes les données Admin proviennent du vrai backend
+Alpha
+Connexion Alertes + Notifications + Stats à l'API
+Toutes les données proviennent du vrai backend
+Réunion 1 (mardi) : point sur les blocages d'intégration.
+Réunion 2 (vendredi) : démonstration de l'application avec données réelles, hors Bluetooth physique.
+Semaine 6 — Mode hors-ligne et stabilisation
+Objectif : implémenter le stockage local SQLite et fiabiliser l'ensemble du système.
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+Tests fonctionnels complets de tous les modules
+Rapport de bugs avec priorités
+Fatima
+Gestion des cas limites des alertes
+Logique de déduplication des alertes en doublon
+Hady
+Stockage local SQLite côté Flutter
+Mesures sauvegardées localement si hors connexion, puis synchronisées
+Mamadou Samba
+Corrections UI/UX selon retours équipe
+Interface Admin et Auth peaufinée
+Alpha
+Corrections UI/UX selon retours équipe
+Interface Alertes, Notifications et Proche peaufinée
+Réunion 1 (mardi) : démonstration du mode hors-ligne, coupure réseau puis observation de la synchronisation différée.
+Réunion 2 (vendredi) : revue complète des bugs identifiés et priorisation.
+Semaine 7 — Tests terrain et corrections
+Objectif : tester l'application avec des utilisateurs réels et corriger les problèmes remontés.
+Membre
+Tâche
+Livrable précis
+Tous
+Tests terrain avec patients et familles volontaires
+Retours collectés et documentés
+Hadjiratou
+Correction des bugs critiques identifiés
+Application stable, sans crash bloquant
+Fatima
+Ajustement des seuils d'alerte selon retours réels
+Seuils calibrés avec l'aide des utilisateurs testeurs
+Hady
+Optimisation de la synchronisation hors-ligne
+Synchronisation fiable même après coupure prolongée
+Mamadou Samba + Alpha
+Améliorations UX selon retours utilisateurs
+Ajustements d'ergonomie sur les écrans les plus utilisés
+Réunion 1 (mardi) : lancement des tests terrain, répartition des testeurs.
+Réunion 2 (vendredi) : compilation des retours, décision go/no-go pour la dernière semaine.
+Semaine 8 — Finalisation, documentation et démonstration
+Objectif : livrer une version stable, documentée, et préparer la suite (phase hardware).
+Membre
+Tâche
+Livrable précis
+Hadjiratou
+Documentation technique complète
+Documentation backend complète et à jour
+Fatima
+Documentation des modèles et de la logique d'alertes
+Schéma de base de données commenté
+Hady
+Documentation du protocole Bluetooth et plan hardware
+Cahier technique pour la phase hardware
+Mamadou Samba
+Préparation des slides de présentation finale
+Support de présentation prêt
+Alpha
+Répétition de la démonstration finale
+Scénario de démo validé par l'équipe
+Tous
+Démonstration finale du prototype logiciel complet
+Présentation devant l'équipe et validation finale
+Réunion 1 (mardi) : répétition générale de la démo.
+Réunion 2 (vendredi) : démonstration finale et lancement officiel de la phase hardware.
+Après la semaine 8 — phase hardware
+Une fois le logiciel complet et stable, l'équipe attaque la phase d'assemblage physique du bracelet (ESP32, capteurs MAX30102, MLX90614, MPU-6050, module SIM800L) et l'écriture du firmware embarqué, pilotée par Mamadou Hady Diallo. Cette phase remplace progressivement les données simulées par de vraies mesures.
+
+5. Cahier technique — liste complète des endpoints API
+Référence exhaustive de tous les endpoints REST à implémenter, organisés par module. Cette liste sert de contrat entre le backend et le frontend.
+5.1 Authentification (accounts/)
+Méthode
+Endpoint
+Description
+POST
+/api/auth/register/
+Inscription d'un nouvel utilisateur
+POST
+/api/auth/login/
+Connexion, retourne un access_token et un refresh_token
+POST
+/api/auth/logout/
+Déconnexion, invalide le refresh_token
+POST
+/api/auth/refresh/
+Renouvelle un access_token expiré
+GET
+/api/auth/me/
+Retourne le profil de l'utilisateur connecté
+PUT
+/api/profile/update/
+Met à jour le profil utilisateur
+5.2 Patients (patients/)
+Méthode
+Endpoint
+Description
+GET
+/api/patients/
+Liste des patients (filtrée selon le rôle de l'appelant)
+POST
+/api/patients/
+Création d'un dossier patient
+GET
+/api/patients/{id}/
+Détail d'un patient
+PUT
+/api/patients/{id}/
+Mise à jour du dossier patient
+DELETE
+/api/patients/{id}/
+Suppression d'un dossier patient
+GET
+/api/patients/{id}/history/
+Historique médical complet du patient
+5.3 Bracelets connectés (devices/)
+Méthode
+Endpoint
+Description
+POST
+/api/devices/register/
+Enregistrement d'un nouveau bracelet (hardware_id)
+GET
+/api/devices/
+Liste de tous les bracelets
+POST
+/api/devices/{id}/associate/
+Association d'un bracelet à un patient
+GET
+/api/devices/{id}/status/
+État actuel du bracelet (batterie, connexion)
+5.4 Données biométriques (biometric_data/)
+Méthode
+Endpoint
+Description
+POST
+/api/biometrics/
+Réception d'une nouvelle mesure (temps réel)
+POST
+/api/biometrics/sync/
+Réception d'un lot de mesures hors-ligne synchronisées
+GET
+/api/biometrics/{patient_id}/
+Dernières mesures d'un patient
+GET
+/api/biometrics/{patient_id}/history/
+Historique complet des mesures (graphiques)
+5.5 Alertes et urgences (alerts/)
+Méthode
+Endpoint
+Description
+GET
+/api/alerts/
+Liste des alertes (filtrée par patient ou statut)
+POST
+/api/alerts/create/
+Création manuelle d'une alerte (ou automatique)
+POST
+/api/alerts/emergency/
+Déclenchement manuel d'une urgence (bouton SOS)
+PUT
+/api/alerts/{id}/resolve/
+Marque une alerte comme résolue
+5.6 Notifications (notifications/)
+Méthode
+Endpoint
+Description
+POST
+/api/notifications/sms/
+Envoi d'un SMS via Africa's Talking
+POST
+/api/notifications/push/
+Envoi d'une notification push via Firebase
+GET
+/api/notifications/
+Historique des notifications envoyées
+5.7 Statistiques (statistics/)
+Méthode
+Endpoint
+Description
+GET
+/api/statistics/reports/
+Rapports et tendances médicales d'un patient
+GET
+/api/admin/dashboard/
+Statistiques globales pour le tableau de bord admin
+
+6. Risques et points de vigilance
+Risque
+Niveau
+Mesure d'atténuation
+Retard sur un module backend bloquant le frontend
+Moyen
+Le backend documente son contrat d'API dès le début de chaque module ; le frontend utilise des données simulées en attendant
+Données biométriques perdues lors d'une coupure réseau
+Élevé
+Stockage local SQLite obligatoire avec synchronisation différée (semaine 6)
+Fausses alertes répétées décourageant les utilisateurs
+Moyen
+Logique de déduplication et seuils personnalisables par patient
+Tests terrain insuffisants avant la démo finale
+Élevé
+Semaine 7 entièrement dédiée aux tests terrain réels, pas de raccourci
+Confusion sur l'identifiant unique du bracelet
+Faible
+Documentation claire du mécanisme hardware_id en section 2 de ce document
+
+7. Conclusion
+Ce plan de travail couvre les huit semaines de développement logiciel du projet Wallan, de l'initialisation de l'architecture jusqu'à la démonstration finale. Chaque membre de l'équipe dispose d'un livrable clair à produire chaque semaine, sans surcharge ni temps mort. La répartition en deux pôles spécialisés, backend pour Hady, Fatima et Hadjiratou, frontend pour Mamadou Samba et Alpha, permet à chacun de progresser sur la technologie qu'il maîtrise tout en gardant une coordination étroite via deux réunions hebdomadaires.
+Une fois ce socle logiciel validé et stable, l'équipe entame la phase d'assemblage du bracelet physique, pilotée par Mamadou Hady Diallo, qui viendra remplacer progressivement les données simulées par les véritables mesures du capteur.
