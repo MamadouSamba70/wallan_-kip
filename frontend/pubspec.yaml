@@ -45,6 +45,10 @@ dependencies:
   # Logger HTTP lisible dans la console pour faciliter le débogage des appels API
   pretty_dio_logger: ^1.4.0
 
+  # Graphiques interactifs biométriques pour l'écran de statistiques (Semaine 4)
+  fl_chart: ^0.70.2
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

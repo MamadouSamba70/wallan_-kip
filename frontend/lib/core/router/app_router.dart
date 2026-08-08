@@ -9,8 +9,12 @@ import '../../features/patients/presentation/screens/patient_list_screen.dart';
 import '../../features/relatives/presentation/screens/relative_dashboard.dart';
 import '../../features/alerts/presentation/screens/alert_screen.dart';
 import '../../features/alerts/presentation/screens/admin_alert_list_screen.dart';
+import '../../features/alerts/presentation/screens/sos_screen.dart';
 import '../../features/alerts/presentation/screens/notifications_screen.dart'; // Semaine 3 : Notifications Proche
 import '../../features/statistics/presentation/screens/statistics_screen.dart'; // Semaine 4 : Statistiques (fl_chart)
+
+
+
 
 
 /// Configuration centralisée de la navigation de l'application Wallan.
