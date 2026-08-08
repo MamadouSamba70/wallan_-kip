@@ -1,5 +1,0 @@
-djangorestframework
-djangorestframework_simplejwt
-psycopg2-binary
-python-decouple
-channels
