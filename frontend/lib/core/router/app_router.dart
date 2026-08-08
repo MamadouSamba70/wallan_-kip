@@ -9,8 +9,9 @@ import '../../features/patients/presentation/screens/patient_list_screen.dart';
 import '../../features/relatives/presentation/screens/relative_dashboard.dart';
 import '../../features/alerts/presentation/screens/alert_screen.dart';
 import '../../features/alerts/presentation/screens/admin_alert_list_screen.dart';
-import '../../features/alerts/presentation/screens/sos_screen.dart';
 import '../../features/alerts/presentation/screens/notifications_screen.dart'; // Semaine 3 : Notifications Proche
+import '../../features/statistics/presentation/screens/statistics_screen.dart'; // Semaine 4 : Statistiques (fl_chart)
+
 
 /// Configuration centralisée de la navigation de l'application Wallan.
 /// Utilise la bibliothèque go_router pour gérer l'historique et les chemins URL.
@@ -88,6 +89,13 @@ class AppRouter {
       GoRoute(
         path: '/relative/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      // Route pour l'écran Statistiques (Semaine 4), accessible depuis le
+      // Patient (ses propres tendances) et le Proche (suivi à distance)
+      GoRoute(
+        path: '/statistics',
+        builder: (context, state) => const StatisticsScreen(),
       ),
     ],
   );

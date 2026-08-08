@@ -27,6 +27,12 @@ class PatientDashboard extends StatelessWidget {
             tooltip: 'Voir les alertes',
             onPressed: () => context.push('/alerts'),
           ),
+          // Accès à l'écran Statistiques (Semaine 4)
+          IconButton(
+            icon: const Icon(Icons.show_chart_rounded),
+            tooltip: 'Voir mes statistiques',
+            onPressed: () => context.push('/statistics'),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Déconnexion',
