@@ -9,8 +9,11 @@ from .serializers import (
     PatientListSerializer,
     PatientDetailSerializer,
     MedicalHistorySerializer,
-    PatientRelativeSerializer
+    PatientRelativeSerializer,
+    PatientFullHistorySerializer,
+    PatientRecommendationSerializer
 )
+from .services import generate_patient_recommendations
 
 class PatientViewSet(viewsets.ModelViewSet):
     """
@@ -20,6 +23,8 @@ class PatientViewSet(viewsets.ModelViewSet):
     - GET /api/patients/{id}/ : Détails d'un patient
     - PUT /api/patients/{id}/ : Modifier un patient
     - DELETE /api/patients/{id}/ : Supprimer un patient
+    - GET /api/patients/{id}/full-history/ : Historique complet (Semaine 5 - Fatima)
+    - GET /api/patients/{id}/recommendations/ : Recommandations de santé (Semaine 5 - Fatima)
     """
     queryset = Patient.objects.all()
     permission_classes = [IsAuthenticated]
@@ -30,6 +35,8 @@ class PatientViewSet(viewsets.ModelViewSet):
             return PatientDetailSerializer
         elif self.action == 'list':
             return PatientListSerializer
+        elif self.action == 'full_history':
+            return PatientFullHistorySerializer
         return PatientSerializer
 
     @action(detail=True, methods=['get'])
@@ -57,6 +64,33 @@ class PatientViewSet(viewsets.ModelViewSet):
             serializer.save(patient=patient)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'], url_path='full-history')
+    def full_history(self, request, pk=None):
+        """
+        [SEMAINE 5 - FATIMA ABDUL SOW]
+        Endpoint d'historique patient complet.
+        GET /api/patients/{id}/full-history/
+        """
+        patient = self.get_object()
+        serializer = PatientFullHistorySerializer(patient)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    def recommendations(self, request, pk=None):
+        """
+        [SEMAINE 5 - FATIMA ABDUL SOW]
+        Endpoint de recommandations de santé adaptatives.
+        GET /api/patients/{id}/recommendations/
+        """
+        patient = self.get_object()
+        recs = generate_patient_recommendations(patient)
+        serializer = PatientRecommendationSerializer(recs, many=True)
+        return Response({
+            'patient_id': patient.id,
+            'patient_name': patient.full_name,
+            'recommendations': serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class MedicalHistoryViewSet(viewsets.ModelViewSet):
