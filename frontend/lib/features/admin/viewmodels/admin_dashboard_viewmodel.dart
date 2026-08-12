@@ -3,12 +3,11 @@ import '../models/admin_stats_model.dart';
 import '../repositories/dashboard_repository.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CHANGEMENT CLÉ par rapport à la Semaine 3 :
-//
-// Avant : ref.read(adminServiceProvider)  → données simulées
-// Après : ref.read(dashboardRepositoryProvider) → vraie API Django
-//
-// Le ViewModel lui-même ne change presque pas — c'est la force du Repository Pattern.
+// OPTIMISATION Semaine 6 :
+// - Ajout d'un cache temporel de 5 minutes pour éviter les requêtes inutiles
+//   lors de la navigation inter-onglets (tab switching).
+// - Guard contre les appels multiples simultanés (_isFetching).
+// - Le ViewModel reste indépendant de la couche UI (MVVM strict).
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// État de l'écran Dashboard Administrateur.
@@ -53,51 +52,58 @@ class AdminDashboardState {
 /// ViewModel gérant la logique métier et l'état réactif de l'Admin Dashboard.
 /// Branché sur DashboardRepository pour les données réelles de l'API Django.
 class AdminDashboardViewModel extends Notifier<AdminDashboardState> {
+  /// Timestamp du dernier chargement réussi (pour le cache de 5 min).
+  DateTime? _lastFetchTime;
+  static const _cacheDuration = Duration(minutes: 5);
+
+  /// Guard anti-double appel simultané.
+  bool _isFetching = false;
+
   @override
   AdminDashboardState build() {
-    // État initial de chargement au lancement
-    final initialState = AdminDashboardState.initial();
-
-    // Chargement automatique asynchrone des statistiques au démarrage du widget
     Future.microtask(() => loadDashboardStats());
-
-    return initialState;
+    return AdminDashboardState.initial();
   }
 
   // ── Chargement principal ───────────────────────────────────────────────────
-  /// Charge ou rafraîchit les statistiques globales depuis l'API Django.
-  ///
-  /// Flux :
-  /// 1. Active le spinner de chargement
-  /// 2. Appelle DashboardRepository.fetchDashboardStats()
-  /// 3. Met à jour l'état avec les données réelles ou l'erreur
-  Future<void> loadDashboardStats() async {
+  /// Charge les statistiques depuis l'API Django.
+  /// Respecte un cache de 5 minutes pour limiter les requêtes inutiles.
+  Future<void> loadDashboardStats({bool forceRefresh = false}) async {
+    if (_isFetching) return;
+
+    if (!forceRefresh && _lastFetchTime != null) {
+      final elapsed = DateTime.now().difference(_lastFetchTime!);
+      if (elapsed < _cacheDuration) return;
+    }
+
+    _isFetching = true;
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      // Appel au Repository qui contacte GET /api/admin/dashboard/
       final repository = ref.read(dashboardRepositoryProvider);
       final fetchedStats = await repository.fetchDashboardStats();
 
+      _lastFetchTime = DateTime.now();
       state = state.copyWith(
         isLoading: false,
         stats: fetchedStats,
-        isFromApi: true, // Marque que les données viennent de la vraie API
+        isFromApi: true,
       );
     } catch (e) {
-      // En cas d'erreur, on garde les anciennes données si elles existent (UX)
       state = state.copyWith(
         isLoading: false,
         errorMessage: e.toString().replaceAll('Exception: ', ''),
         isFromApi: false,
       );
+    } finally {
+      _isFetching = false;
     }
   }
 
   // ── Rafraîchissement manuel ────────────────────────────────────────────────
-  /// Déclenché par le bouton refresh ou le RefreshIndicator (pull-to-refresh).
+  /// Force le rechargement même si le cache n'est pas expiré.
   Future<void> refresh() async {
-    await loadDashboardStats();
+    await loadDashboardStats(forceRefresh: true);
   }
 }
 

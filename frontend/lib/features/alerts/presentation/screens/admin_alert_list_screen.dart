@@ -19,10 +19,9 @@ class AdminAlertListScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // --- Zone Filtres et Recherche ---
             Container(
               padding: const EdgeInsets.all(16.0),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   TextField(
@@ -98,11 +97,20 @@ class AdminAlertListScreen extends ConsumerWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.notifications_off_rounded, size: 64, color: Colors.grey.shade400),
+                              Icon(Icons.notifications_off_rounded, size: 72, color: Colors.grey.shade300),
                               const SizedBox(height: 16),
                               Text(
-                                'Aucune alerte à afficher.',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                                'Aucune alerte à afficher',
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Toutes les alertes ont été traitées.',
+                                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
                               ),
                             ],
                           ),
@@ -111,6 +119,8 @@ class AdminAlertListScreen extends ConsumerWidget {
                           onRefresh: () => viewModel.refresh(),
                           child: ListView.builder(
                             padding: const EdgeInsets.all(16),
+                            // ignore: deprecated_member_use
+                            cacheExtent: 500.0,
                             itemCount: filteredAlerts.length,
                             itemBuilder: (context, index) {
                               final alert = filteredAlerts[index];

@@ -24,7 +24,7 @@ class PatientListScreen extends ConsumerWidget {
             // --- Barre de recherche & Filtres ---
             Container(
               padding: const EdgeInsets.all(16.0),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   // Champ de Recherche
@@ -102,6 +102,8 @@ class PatientListScreen extends ConsumerWidget {
                           onRefresh: () => viewModel.refresh(),
                           child: ListView.builder(
                             padding: const EdgeInsets.all(16),
+                            // ignore: deprecated_member_use
+                            cacheExtent: 500.0,
                             itemCount: filteredList.length,
                             itemBuilder: (context, index) {
                               final patient = filteredList[index];
