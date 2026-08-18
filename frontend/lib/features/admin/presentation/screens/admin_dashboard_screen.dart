@@ -8,6 +8,7 @@ import '../../viewmodels/admin_dashboard_viewmodel.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/simulated_line_chart.dart';
 import '../widgets/simulated_bar_chart.dart';
+import '../widgets/admin_skeleton_loader.dart';
 import '../../../patients/presentation/screens/patient_list_screen.dart';
 import '../../../alerts/presentation/screens/admin_alert_list_screen.dart';
 import '../../../auth/viewmodels/auth_viewmodel.dart';
@@ -70,73 +71,91 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       body: isWideScreen
           ? Row(
               children: [
-                // Rail de navigation pour grands écrans (Desktop / Tablette)
                 NavigationRail(
                   leading: const Padding(
                     padding: EdgeInsets.only(top: 12, bottom: 20),
                     child: WallanLogo(size: 52, showBadge: true),
                   ),
                   selectedIndex: _selectedIndex,
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  },
+                  onDestinationSelected: (int index) =>
+                      setState(() => _selectedIndex = index),
                   labelType: NavigationRailLabelType.all,
-                  selectedIconTheme: const IconThemeData(color: AppTheme.primaryBlue, size: 28),
-                  unselectedIconTheme: IconThemeData(color: Colors.grey.shade600),
-                  selectedLabelTextStyle: const TextStyle(
-                    color: AppTheme.primaryBlue,
-                    fontWeight: FontWeight.bold,
-                  ),
                   destinations: const [
                     NavigationRailDestination(
-                      icon: Icon(Icons.dashboard_rounded),
+                      icon: Icon(Icons.dashboard_outlined),
+                      selectedIcon: Icon(Icons.dashboard_rounded),
                       label: Text('Aperçu'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.people_alt_rounded),
+                      icon: Icon(Icons.people_alt_outlined),
+                      selectedIcon: Icon(Icons.people_alt_rounded),
                       label: Text('Patients'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.notifications_active_rounded),
+                      icon: Icon(Icons.notifications_outlined),
+                      selectedIcon: Icon(Icons.notifications_active_rounded),
                       label: Text('Alertes'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.insights_rounded),
+                      icon: Icon(Icons.insights_outlined),
+                      selectedIcon: Icon(Icons.insights_rounded),
                       label: Text('Analytiques'),
                     ),
                   ],
                 ),
                 const VerticalDivider(thickness: 1, width: 1),
                 Expanded(
-                  child: _buildBodyTab(_selectedIndex, state, viewModel, isWideScreen),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeInOut,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation, child: child,
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(_selectedIndex),
+                      child: _buildBodyTab(_selectedIndex, state, viewModel, isWideScreen),
+                    ),
+                  ),
                 ),
               ],
             )
-          : _buildBodyTab(_selectedIndex, state, viewModel, isWideScreen),
+          : AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeInOut,
+              switchOutCurve: Curves.easeInOut,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+              child: KeyedSubtree(
+                key: ValueKey<int>(_selectedIndex),
+                child: _buildBodyTab(_selectedIndex, state, viewModel, isWideScreen),
+              ),
+            ),
       bottomNavigationBar: !isWideScreen
-          ? BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: (index) => setState(() => _selectedIndex = index),
-              selectedItemColor: AppTheme.primaryBlue,
-              unselectedItemColor: Colors.grey.shade600,
-              type: BottomNavigationBarType.fixed,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard_rounded),
+          ? NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+              animationDuration: const Duration(milliseconds: 400),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard_rounded),
                   label: 'Aperçu',
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people_alt_rounded),
+                NavigationDestination(
+                  icon: Icon(Icons.people_alt_outlined),
+                  selectedIcon: Icon(Icons.people_alt_rounded),
                   label: 'Patients',
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.notifications_active_rounded),
+                NavigationDestination(
+                  icon: Icon(Icons.notifications_outlined),
+                  selectedIcon: Icon(Icons.notifications_active_rounded),
                   label: 'Alertes',
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.insights_rounded),
+                NavigationDestination(
+                  icon: Icon(Icons.insights_outlined),
+                  selectedIcon: Icon(Icons.insights_rounded),
                   label: 'Analytiques',
                 ),
               ],
@@ -180,16 +199,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final theme = Theme.of(context);
 
     if (state.isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: AppTheme.primaryBlue),
-            SizedBox(height: 16),
-            Text('Chargement du Dashboard...'),
-          ],
-        ),
-      );
+      return const AdminSkeletonLoader();
     }
 
     return RefreshIndicator(
@@ -204,24 +214,37 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             _buildHeader(context),
             const SizedBox(height: 20),
 
-            // Message d'erreur si présent
+            // Bandeau d'erreur avec bouton Réessayer
             if (state.errorMessage != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.errorRed.withValues(alpha: 0.1),
+                  color: AppTheme.errorRed.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.errorRed),
+                  border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppTheme.errorRed),
-                    const SizedBox(width: 12),
+                    const Icon(Icons.wifi_off_rounded, color: AppTheme.errorRed, size: 20),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         state.errorMessage!,
-                        style: const TextStyle(color: AppTheme.errorRed),
+                        style: const TextStyle(color: AppTheme.errorRed, fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => viewModel.refresh(),
+                      icon: const Icon(Icons.refresh_rounded, size: 16, color: AppTheme.errorRed),
+                      label: const Text('Réessayer', style: TextStyle(color: AppTheme.errorRed, fontSize: 12)),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],
@@ -430,6 +453,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           subtitle: 'Patients suivis',
           icon: Icons.people_alt_rounded,
           iconColor: AppTheme.primaryBlue,
+          trendPercent: 8,
           onTap: () => setState(() => _selectedIndex = 1),
         ),
         StatCard(
@@ -438,6 +462,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           subtitle: 'Bracelets gérés',
           icon: Icons.watch_rounded,
           iconColor: AppTheme.secondaryBlue,
+          trendPercent: 3,
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Supervision de ${stats.braceletCount} bracelets actifs')),
@@ -450,6 +475,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           subtitle: 'Avis en cours',
           icon: Icons.notifications_active_rounded,
           iconColor: AppTheme.warningOrange,
+          trendPercent: -5,
           onTap: () => setState(() => _selectedIndex = 2),
         ),
         StatCard(
@@ -458,6 +484,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           subtitle: 'Traitement urgent',
           icon: Icons.warning_amber_rounded,
           iconColor: AppTheme.errorRed,
+          pulsate: stats.criticalAlertsCount > 0,
           onTap: () => context.go('/sos'),
         ),
       ],

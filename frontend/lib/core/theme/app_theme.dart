@@ -14,6 +14,7 @@ class AppTheme {
   static const Color warningOrange = Color(0xFFED6C02); // Orange pour les avertissements
   static const Color successGreen = Color(0xFF2E7D32); // Vert pour l'état Normal
   static const Color infoBlue = Color(0xFF0288D1); // Bleu pour les infos système
+  static const Color accentTeal = Color(0xFF00897B); // Teal pour SpO2 et graphiques secondaires
 
   // --- Couleurs d'arrière-plan ---
   static const Color bgLight = Color(0xFFF5F8FD); // Fond d'écran global bleu-gris clair (Mockup)
@@ -115,10 +116,70 @@ class AppTheme {
       // Configuration du style des cartes (Card)
       cardTheme: CardThemeData(
         color: cardLight,
-        elevation: 0.5, // Ombre très douce
+        elevation: 0.5,
+        shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+      ),
+
+      // Navigation Material 3 — BottomNavigationBar moderne
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: primaryLight,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: primaryBlue,
+            );
+          }
+          return GoogleFonts.inter(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: primaryBlue, size: 24);
+          }
+          return IconThemeData(color: Colors.grey.shade500, size: 22);
+        }),
+      ),
+
+      // NavigationRail stylisée
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: bgLight,
+        selectedIconTheme: const IconThemeData(color: primaryBlue, size: 26),
+        unselectedIconTheme: IconThemeData(color: Colors.grey.shade500, size: 22),
+        selectedLabelTextStyle: const TextStyle(
+          color: primaryBlue,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: 12,
+        ),
+        indicatorColor: primaryLight,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+
+      // Chip de filtres
+      chipTheme: ChipThemeData(
+        backgroundColor: bgLight,
+        selectedColor: primaryBlue,
+        labelStyle: GoogleFonts.inter(fontSize: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+
+      // RefreshIndicator cohérent avec la charte
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: primaryBlue,
+        refreshBackgroundColor: primaryLight,
       ),
     );
   }
@@ -218,9 +279,59 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: cardDark,
         elevation: 2,
+        shadowColor: Colors.black38,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+      ),
+
+      // Navigation Material 3 sombre
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: cardDark,
+        indicatorColor: primaryBlue.withValues(alpha: 0.25),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: secondaryBlue,
+            );
+          }
+          return GoogleFonts.inter(
+            fontSize: 12,
+            color: Colors.white38,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: secondaryBlue, size: 24);
+          }
+          return const IconThemeData(color: Colors.white38, size: 22);
+        }),
+      ),
+
+      // NavigationRail sombre
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: cardDark,
+        selectedIconTheme: const IconThemeData(color: secondaryBlue, size: 26),
+        unselectedIconTheme: const IconThemeData(color: Colors.white38, size: 22),
+        selectedLabelTextStyle: const TextStyle(
+          color: secondaryBlue,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+        unselectedLabelTextStyle: const TextStyle(
+          color: Colors.white38,
+          fontSize: 12,
+        ),
+        indicatorColor: primaryBlue.withValues(alpha: 0.25),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: secondaryBlue,
       ),
     );
   }
