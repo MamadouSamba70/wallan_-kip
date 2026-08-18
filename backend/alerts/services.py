@@ -241,3 +241,80 @@ def dispatch_alert_notifications(alert) -> list:
             logs.append(log_rel_push)
 
     return logs
+
+
+# ------------------------------------------------------------------------------
+# 4. GESTION DES CAS LIMITES ET DÉDUPLICATION DES ALERTES (SEMAINE 6 - FATIMA ABDUL SOW)
+# ------------------------------------------------------------------------------
+
+def create_or_deduplicate_alert(patient, alert_type, severity, value_detected, threshold_value, cooldown_minutes=15):
+    """
+    [SEMAINE 6 - FATIMA ABDUL SOW - LIVRABLE SEMAINE 6]
+    Gestion des cas limites et déduplication des alertes en doublon.
+
+    Vérifie si une alerte active du même type existe déjà pour le patient
+    dans la fenêtre de temporisation (cooldown_minutes).
+
+    Règles de déduplication et cas limites :
+    1. Si une alerte active récente existe :
+       - Ne crée PAS de nouvelle ligne d'alerte en base de données.
+       - Ne ré-envoie PAS de SMS/Push inutile aux proches (anti-spam).
+       - Met à jour la valeur mesurée si elle est plus critique.
+       - Escalade la sévérité de 'warning' à 'critical' et notifie si l'état s'aggrave.
+    2. Si aucune alerte active n'est présente dans la fenêtre (ou si la précédente est résolue) :
+       - Crée une nouvelle instance de modèle Alert.
+       - Déclenche les notifications automatiques.
+
+    :return: tuple (Alert, bool created)
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    from .models import Alert
+
+    now = timezone.now()
+    cooldown_time = now - timedelta(minutes=cooldown_minutes)
+
+    # Recherche d'une alerte active récente du même type pour ce patient
+    recent_active_alert = Alert.objects.filter(
+        patient=patient,
+        alert_type=alert_type,
+        status='active',
+        created_at__gte=cooldown_time
+    ).first()
+
+    if recent_active_alert:
+        logger.info(
+            f"[DÉDUPLICATION SEMAINE 6 - FATIMA] Alerte active récente trouvée ({recent_active_alert.id}) "
+            f"pour le patient {patient.full_name} ({alert_type}). Alerte en doublon dédupliquée."
+        )
+
+        escalated = False
+        if recent_active_alert.severity == 'warning' and severity == 'critical':
+            recent_active_alert.severity = 'critical'
+            escalated = True
+
+        # Mise à jour de la valeur mesurée si elle est plus extrême
+        recent_active_alert.value_detected = value_detected
+        recent_active_alert.save()
+
+        # Si escalade de sévérité, ré-émission d'une notification d'urgence
+        if escalated:
+            dispatch_alert_notifications(recent_active_alert)
+
+        return recent_active_alert, False
+
+    # Création d'une nouvelle alerte si aucune alerte active dans la fenêtre
+    new_alert = Alert.objects.create(
+        patient=patient,
+        alert_type=alert_type,
+        severity=severity,
+        value_detected=value_detected,
+        threshold_value=threshold_value,
+        status='active'
+    )
+
+    # Déclenchement automatique des notifications SMS / Push
+    dispatch_alert_notifications(new_alert)
+
+    return new_alert, True
+
