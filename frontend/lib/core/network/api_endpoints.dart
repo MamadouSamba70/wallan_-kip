@@ -59,4 +59,9 @@ class ApiEndpoints {
   static const String devices = '/devices/';
   // GET  /api/biometric-data/ → liste les données biométriques
   static const String biometrics = '/biometric-data/';
+
+  static const String biometricsReceive = '/biometrics/';
+static const String biometricsSync = '/biometrics/sync/';
+static String biometricsLatest(String patientId) => '/biometrics/$patientId/';
+static String biometricsHistory(String patientId) => '/biometrics/$patientId/history/';
 }
