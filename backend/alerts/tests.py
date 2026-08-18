@@ -122,3 +122,134 @@ class NotificationServicesTestCase(TestCase):
 
         # Au moins 2 SMS doivent être enregistrés (1 pour le patient, 1 pour le proche)
         self.assertGreaterEqual(logs.count(), 2)
+
+
+class AlertDeduplicationWeek6TestCase(TestCase):
+    """
+    [SEMAINE 6 - FATIMA ABDUL SOW - LIVRABLE SEMAINE 6]
+    Tests unitaires pour la déduplication des alertes et la gestion des cas limites.
+    """
+
+    def setUp(self):
+        from devices.models import Device
+        from django.utils import timezone
+
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='fatima_semaine6@wallan.health',
+            password='password123',
+            role='admin'
+        )
+        self.client.force_authenticate(user=self.user)
+
+        self.patient_user = User.objects.create_user(
+            email='patient_sem6@wallan.health',
+            password='password123',
+            role='patient'
+        )
+        Profile.objects.create(user=self.patient_user, phone='+221778889900')
+
+        self.patient = Patient.objects.create(
+            user=self.patient_user,
+            full_name="Awa Ndiaye",
+            birth_date="1990-01-01",
+            condition="hypertension",
+            threshold_heart_rate=100,
+            threshold_temperature=38.0,
+            threshold_spo2=92
+        )
+
+        # Création d'un bracelet connecté pour les tests biométriques
+        self.device = Device.objects.create(
+            hardware_id="AA:BB:CC:DD:EE:66",
+            model="Wallan-v1",
+            firmware_version="1.0.0",
+            status="active"
+        )
+
+    def test_alert_deduplication_prevents_duplicate_active_alerts(self):
+        """
+        [SEMAINE 6 - FATIMA ABDUL SOW]
+        Vérifie que la réception successive de deux mesures anormales rapprochées
+        ne crée pas deux alertes actives distinctes en base de données (anti-spam).
+        """
+        from biometric_data.views import detect_and_create_alerts
+        from biometric_data.models import BiometricReading
+        from django.utils import timezone
+
+        now = timezone.now()
+
+        # Premières mesures anormales
+        reading1 = BiometricReading.objects.create(
+            patient=self.patient,
+            device=self.device,
+            heart_rate=130,
+            temperature=37.0,
+            spo2=98,
+            recorded_at=now
+        )
+        alerts1 = detect_and_create_alerts(reading1, self.patient)
+        self.assertEqual(len(alerts1), 1)
+        self.assertEqual(Alert.objects.filter(patient=self.patient, alert_type='heart_rate').count(), 1)
+
+        # Seconde mesure anormale dans la fenêtre de temporisation (ex: 1 min après)
+        reading2 = BiometricReading.objects.create(
+            patient=self.patient,
+            device=self.device,
+            heart_rate=135,
+            temperature=37.0,
+            spo2=98,
+            recorded_at=now
+        )
+        alerts2 = detect_and_create_alerts(reading2, self.patient)
+        
+        # Aucun nouvel objet alerte ne doit être retourné en tant que nouvellement créé
+        self.assertEqual(len(alerts2), 0)
+
+        # Le nombre total d'alertes en base doit rester à 1
+        self.assertEqual(Alert.objects.filter(patient=self.patient, alert_type='heart_rate').count(), 1)
+
+        # La valeur détectée dans l'alerte existante a été mise à jour à 135
+        alert = Alert.objects.get(patient=self.patient, alert_type='heart_rate')
+        self.assertEqual(float(alert.value_detected), 135.0)
+
+    def test_batch_sync_offline_deduplicates_alerts(self):
+        """
+        [SEMAINE 6 - FATIMA ABDUL SOW]
+        Vérifie la déduplication lors de la synchronisation en masse (Batch Sync)
+        de plusieurs mesures enregistrées hors-ligne.
+        """
+        payload_sync = [
+            {
+                'patient': str(self.patient.id),
+                'device': str(self.device.id),
+                'heart_rate': 125,
+                'temperature': 37.0,
+                'spo2': 98,
+                'recorded_at': '2026-08-11T10:00:00Z'
+            },
+            {
+                'patient': str(self.patient.id),
+                'device': str(self.device.id),
+                'heart_rate': 128,
+                'temperature': 37.0,
+                'spo2': 98,
+                'recorded_at': '2026-08-11T10:05:00Z'
+            },
+            {
+                'patient': str(self.patient.id),
+                'device': str(self.device.id),
+                'heart_rate': 132,
+                'temperature': 37.0,
+                'spo2': 98,
+                'recorded_at': '2026-08-11T10:10:00Z'
+            }
+        ]
+
+        response = self.client.post('/api/biometrics/sync/', payload_sync, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['saved_count'], 3)
+
+        # Même si 3 mesures dépassaient le seuil, une seule alerte globale a été créée
+        self.assertEqual(Alert.objects.filter(patient=self.patient, alert_type='heart_rate').count(), 1)
+        self.assertEqual(response.data['alerts_created'], 1)

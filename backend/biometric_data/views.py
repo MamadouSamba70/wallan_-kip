@@ -14,13 +14,13 @@ from .serializers import (
     BiometricSyncSerializer,
 )
 from patients.models import Patient
-from alerts.models import Alert
+from alerts.services import create_or_deduplicate_alert
 
 
 def detect_and_create_alerts(reading, patient):
     """
     Comparaison automatique des valeurs reçues aux seuils du patient.
-    Crée une alerte si un seuil est dépassé.
+    Utilise la déduplication et gestion des cas limites (Semaine 6 - Fatima Abdul Sow).
     Sévérité : warning (écart < 20%) ou critical (écart >= 20%).
     """
 
@@ -32,42 +32,46 @@ def detect_and_create_alerts(reading, patient):
 
     # Vérification fréquence cardiaque
     if reading.heart_rate > patient.threshold_heart_rate:
-        alert = Alert.objects.create(
+        sev = calculate_severity(reading.heart_rate, patient.threshold_heart_rate)
+        alert, created = create_or_deduplicate_alert(
             patient=patient,
             alert_type='heart_rate',
-            severity=calculate_severity(reading.heart_rate, patient.threshold_heart_rate),
+            severity=sev,
             value_detected=reading.heart_rate,
-            threshold_value=patient.threshold_heart_rate,
-            status='active'
+            threshold_value=patient.threshold_heart_rate
         )
-        alerts_crees.append(alert)
+        if created:
+            alerts_crees.append(alert)
 
     # Vérification température
     if float(reading.temperature) > float(patient.threshold_temperature):
-        alert = Alert.objects.create(
+        val = float(reading.temperature)
+        thresh = float(patient.threshold_temperature)
+        sev = calculate_severity(val, thresh)
+        alert, created = create_or_deduplicate_alert(
             patient=patient,
             alert_type='temperature',
-            severity=calculate_severity(float(reading.temperature), float(patient.threshold_temperature)),
+            severity=sev,
             value_detected=reading.temperature,
-            threshold_value=patient.threshold_temperature,
-            status='active'
+            threshold_value=patient.threshold_temperature
         )
-        alerts_crees.append(alert)
+        if created:
+            alerts_crees.append(alert)
 
     # Vérification SpO2 (alerte si INFÉRIEUR au seuil)
     if reading.spo2 < patient.threshold_spo2:
-        alert = Alert.objects.create(
+        sev = calculate_severity(reading.spo2, patient.threshold_spo2)
+        alert, created = create_or_deduplicate_alert(
             patient=patient,
             alert_type='spo2',
-            severity=calculate_severity(reading.spo2, patient.threshold_spo2),
+            severity=sev,
             value_detected=reading.spo2,
-            threshold_value=patient.threshold_spo2,
-            status='active'
+            threshold_value=patient.threshold_spo2
         )
-        alerts_crees.append(alert)
+        if created:
+            alerts_crees.append(alert)
 
     return alerts_crees
-
 
 class BiometricReceiveView(APIView):
     """
