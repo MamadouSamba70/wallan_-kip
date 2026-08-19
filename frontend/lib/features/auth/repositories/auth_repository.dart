@@ -59,23 +59,19 @@ class AuthRepository {
         role: UserRoleExtension.fromString(authResponse.user.role),
       );
     } on DioException catch (e) {
-      // Si l'API Django est EN LIGNE et a explicitement renvoyé 401 (mot de passe incorrect)
-      if (e.response?.statusCode == 401) {
+      // Si le serveur Django a répondu (400, 401, 403, 500, etc.), lever l'erreur réelle
+      if (e.response != null) {
         throw Exception(_parseDioError(e));
       }
 
-      // Pour toute autre erreur (serveur pas démarré, CORS, timeout, network error)
+      // Seulement en cas de panne réseau totale (serveur non démarré) -> Mode Démo
       debugPrint('⚠️ Backend non disponible (${e.type}) — Bascule automatique en Mode Démo');
       final mockUser = _tryMockLogin(cleanEmail, password);
       await _tokenStorage.saveUserId(mockUser.id);
       await _tokenStorage.saveUserRole(mockUser.role.name);
       return mockUser;
     } catch (e) {
-      debugPrint('⚠️ Connexion hors-ligne — Bascule Mode Démo: $e');
-      final mockUser = _tryMockLogin(cleanEmail, password);
-      await _tokenStorage.saveUserId(mockUser.id);
-      await _tokenStorage.saveUserRole(mockUser.role.name);
-      return mockUser;
+      rethrow;
     }
   }
 
