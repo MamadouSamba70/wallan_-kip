@@ -60,49 +60,29 @@ class AdminDashboardStatsView(APIView):
             active_alerts = Alert.objects.filter(status='active').count()
             critical_alerts = Alert.objects.filter(status='active', severity='critical').count()
 
-            recent_devices_qs = Device.objects.select_related('current_assignment__patient').all()[:5]
+            recent_devices_qs = Device.objects.prefetch_related(
+                'assignments__patient', 'device_status'
+            ).all()[:5]
             recent_devices = []
             for dev in recent_devices_qs:
                 patient_name = "Non assigné"
-                if hasattr(dev, 'current_assignment') and dev.current_assignment and dev.current_assignment.patient:
-                    patient_name = dev.current_assignment.patient.full_name
+                current = dev.assignments.filter(is_current=True).select_related('patient').first()
+                if current and current.patient:
+                    patient_name = current.patient.full_name
+
+                device_status = getattr(dev, 'device_status', None)
+                battery = device_status.battery_level if device_status else 85
+                is_connected = device_status.is_connected if device_status else False
 
                 recent_devices.append({
                     "id": str(dev.id),
-                    "mac_address": dev.mac_address,
+                    "mac_address": dev.hardware_id,
                     "patient_name": patient_name,
-                    "status": "Actif" if dev.is_active else "Inactif",
-                    "battery_level": getattr(dev, 'battery_level', 85),
-                    "is_connected": getattr(dev, 'is_connected', True),
+                    "status": dev.get_status_display(),
+                    "battery_level": battery,
+                    "is_connected": is_connected,
                     "last_seen": "Récent",
                 })
-
-            # Si aucune donnée en BDD, on renvoie une synthèse de démarrage propre
-            if patient_count == 0 and bracelet_count == 0:
-                patient_count = 86
-                bracelet_count = 124
-                active_alerts = 7
-                critical_alerts = 3
-                recent_devices = [
-                    {
-                        "id": "1",
-                        "mac_address": "ESP32-E8:9F:6D:8B:12:4A",
-                        "patient_name": "Mamadou Samba Diallo",
-                        "status": "Actif",
-                        "battery_level": 88,
-                        "is_connected": True,
-                        "last_seen": "Il y a 2 min"
-                    },
-                    {
-                        "id": "2",
-                        "mac_address": "ESP32-F4:12:3A:90:5B:C2",
-                        "patient_name": "Aissatou Bah",
-                        "status": "Alerte Critique",
-                        "battery_level": 14,
-                        "is_connected": True,
-                        "last_seen": "À l'instant"
-                    }
-                ]
 
             return Response({
                 "patients": patient_count,
