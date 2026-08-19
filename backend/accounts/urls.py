@@ -1,13 +1,14 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import RegisterView, UserProfileView, LogoutView
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import RegisterView, UserProfileView, LogoutView, CustomTokenObtainPairView
 
 urlpatterns = [
     # Inscription
     path('register/', RegisterView.as_view(), name='register'),
     
-    # Connexion (Génère l'Access Token et le Refresh Token)
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    # Connexion (Génère l'Access Token, Refresh Token ET renvoie le profil User)
+    path('login/', CustomTokenObtainPairView.as_view(), name='login'),
+
     
     # Renouvellement du Token
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),

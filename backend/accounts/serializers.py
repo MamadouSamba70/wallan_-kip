@@ -40,3 +40,31 @@ class RegisterSerializer(serializers.ModelSerializer):
         Profile.objects.create(user=user)
         
         return user
+
+
+# 4. Sérialiseur de connexion personnalisé (Custom SimpleJWT)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        
+        # Récupération du nom du patient si c'est un patient, sinon l'email
+        full_name = user.email
+        if hasattr(user, 'patient_profile') and user.patient_profile:
+            full_name = user.patient_profile.full_name
+
+        phone = ''
+        if hasattr(user, 'profile') and user.profile:
+            phone = user.profile.phone
+
+        data['user'] = {
+            'id': str(user.id),
+            'email': user.email,
+            'name': full_name,
+            'role': user.role,
+            'phone': phone,
+        }
+        return data
+

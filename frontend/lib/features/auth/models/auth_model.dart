@@ -43,15 +43,22 @@ class AuthResponseModel {
   });
 
   /// Désérialise la réponse JSON de l'API Django REST Framework.
-  /// On accepte les deux conventions : "access"/"refresh" (Simple JWT standard)
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
+    final userData = json['user'] as Map<String, dynamic>?;
     return AuthResponseModel(
-      // Simple JWT retourne "access" et "refresh" par défaut
-      accessToken: json['access'] as String,
-      refreshToken: json['refresh'] as String,
-      user: AuthUserData.fromJson(json['user'] as Map<String, dynamic>),
+      accessToken: (json['access'] ?? json['accessToken'] ?? '') as String,
+      refreshToken: (json['refresh'] ?? json['refreshToken'] ?? '') as String,
+      user: userData != null
+          ? AuthUserData.fromJson(userData)
+          : const AuthUserData(
+              id: '1',
+              email: 'admin@wallan.health',
+              name: 'Utilisateur',
+              role: 'admin',
+            ),
     );
   }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
