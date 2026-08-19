@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import '../../features/home/presentation/screens/home_screen.dart';
+
 import '../../features/auth/views/login_screen.dart';
 import '../../features/auth/views/register_screen.dart';
 import '../../features/auth/views/splash_screen.dart';
@@ -29,10 +29,10 @@ class AppRouter {
         builder: (context, state) => const SplashScreen(),
       ),
 
-      // Route pour la page d'accueil (Portail de sélection des rôles)
+      // Route principale → Connexion directe (sans sélection de rôle)
       GoRoute(
         path: '/',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const LoginScreen(),
       ),
       
       // Route pour l'écran de connexion (Login)
